@@ -7,7 +7,7 @@ export const launchPlatforms = [
   "LinkedIn",
   "Pinterest",
   "Reddit",
-  "Discord"
+  "Discord",
 ] as const;
 
 export type SocialConnectorContract = {
@@ -23,3 +23,15 @@ export type SocialConnectorContract = {
 };
 
 export * from "./policies";
+export * from "./types";
+export * from "./connector";
+export * from "./registry";
+export * from "./connectors/facebook";
+export * from "./connectors/instagram";
+export * from "./connectors/tiktok";
+export * from "./connectors/youtube";
+export * from "./connectors/youtube-shorts";
+export * from "./connectors/linkedin";
+export * from "./connectors/pinterest";
+export * from "./connectors/reddit";
+export * from "./connectors/discord";

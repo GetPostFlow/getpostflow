@@ -7,7 +7,7 @@ import type {
   AnalyticsBundle,
   Message,
   ReplyResult,
-} from "./types.js";
+} from "./types";
 
 // ─── Errors ───────────────────────────────────────────────────────────────────
 

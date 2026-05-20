@@ -57,3 +57,17 @@ export const modelRoutingTable: Record<
   video_generation: { primary: "runway", fallback: "replicate" },
   brand_grounded_translation: { primary: "openai", fallback: "anthropic" },
 };
+
+// ─── Phase 0.3 additions ──────────────────────────────────────────────────────
+
+export * from "./types";
+export * from "./provider";
+export * from "./router";
+export * from "./providers/anthropic";
+export * from "./providers/openai";
+export * from "./providers/gemini";
+export * from "./providers/fal";
+export * from "./providers/replicate";
+export * from "./providers/runway";
+export * from "./providers/veo";
+export * from "./providers/sora";

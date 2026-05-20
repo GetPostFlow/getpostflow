@@ -8,3 +8,6 @@ build
 .env.local
 .env.*.local
 coverage
+*.tsbuildinfo
+package-lock.json
+.vercel
