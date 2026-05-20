@@ -63,13 +63,8 @@ Small business owners, marketing teams, and social media agencies. All end-users
 ## Redirect URIs
 
 ```
-https://staging.getpostflow.com/api/oauth/tiktok/callback
+https://getpostflow.vercel.app/api/oauth/tiktok/callback
 ```
-
-> **TODO (replace before production submission):** Add the production URI:
-> ```
-> https://getpostflow.com/api/oauth/tiktok/callback
-> ```
 
 ---
 
@@ -77,10 +72,8 @@ https://staging.getpostflow.com/api/oauth/tiktok/callback
 
 | Document | URL |
 |---|---|
-| Privacy Policy | `https://staging.getpostflow.com/privacy` |
-| Terms of Service | `https://staging.getpostflow.com/terms` |
-
-> **TODO:** Replace `staging.getpostflow.com` with the production domain. Privacy policy must explicitly cover TikTok Platform Data collection, storage, usage, and deletion procedures per TikTok Platform Policy requirements.
+| Privacy Policy | `https://getpostflow.vercel.app/privacy` |
+| Terms of Service | `https://getpostflow.vercel.app/terms` |
 
 ---
 

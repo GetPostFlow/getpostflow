@@ -68,13 +68,9 @@ Small businesses, creators operating as a business, and marketing agencies manag
 ## Redirect URIs
 
 ```
-https://staging.getpostflow.com/api/oauth/youtube/callback
+https://getpostflow.vercel.app/api/oauth/youtube/callback
 ```
 
-> **TODO (replace before production submission):** Add the production URI:
-> ```
-> https://getpostflow.com/api/oauth/youtube/callback
-> ```
 > Also register the redirect URI in the Google Cloud Console under **APIs & Services → Credentials → OAuth 2.0 Client IDs**.
 
 ---
@@ -83,13 +79,8 @@ https://staging.getpostflow.com/api/oauth/youtube/callback
 
 | Document | URL |
 |---|---|
-| Privacy Policy | `https://staging.getpostflow.com/privacy` |
-| Terms of Service | `https://staging.getpostflow.com/terms` |
-
-> **TODO:** Replace `staging.getpostflow.com` with the production domain. Google's OAuth verification requires the privacy policy to be:
-> - Publicly accessible (no login required)
-> - Explicitly covering Google user data collection, use, and deletion
-> - Compliant with Google API Services User Data Policy
+| Privacy Policy | `https://getpostflow.vercel.app/privacy` |
+| Terms of Service | `https://getpostflow.vercel.app/terms` |
 
 ---
 

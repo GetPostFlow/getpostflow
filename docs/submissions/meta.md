@@ -76,13 +76,8 @@ Small business owners, marketing managers, and social media agencies managing on
 ## Redirect URIs
 
 ```
-https://staging.getpostflow.com/api/oauth/meta/callback
+https://getpostflow.vercel.app/api/oauth/meta/callback
 ```
-
-> **TODO (replace before production submission):** Swap `staging.getpostflow.com` for the production domain once DNS is live. Also add:
-> ```
-> https://getpostflow.com/api/oauth/meta/callback
-> ```
 
 ---
 
@@ -90,10 +85,8 @@ https://staging.getpostflow.com/api/oauth/meta/callback
 
 | Document | URL |
 |---|---|
-| Privacy Policy | `https://staging.getpostflow.com/privacy` |
-| Terms of Service | `https://staging.getpostflow.com/terms` |
-
-> **TODO:** Replace `staging.getpostflow.com` with the production domain before submission. Ensure privacy policy explicitly addresses: (1) data collected from Facebook/Instagram APIs, (2) how it is used and stored, (3) user rights under GDPR, and (4) data deletion instructions.
+| Privacy Policy | `https://getpostflow.vercel.app/privacy` |
+| Terms of Service | `https://getpostflow.vercel.app/terms` |
 
 ---
 

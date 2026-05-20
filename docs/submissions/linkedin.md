@@ -63,13 +63,8 @@ GetPostFlow does **not** post to personal LinkedIn profiles. It operates exclusi
 ## Redirect URIs
 
 ```
-https://staging.getpostflow.com/api/oauth/linkedin/callback
+https://getpostflow.vercel.app/api/oauth/linkedin/callback
 ```
-
-> **TODO (replace before production submission):** Add the production URI:
-> ```
-> https://getpostflow.com/api/oauth/linkedin/callback
-> ```
 
 ---
 
@@ -77,10 +72,8 @@ https://staging.getpostflow.com/api/oauth/linkedin/callback
 
 | Document | URL |
 |---|---|
-| Privacy Policy | `https://staging.getpostflow.com/privacy` |
-| Terms of Service | `https://staging.getpostflow.com/terms` |
-
-> **TODO:** Replace `staging.getpostflow.com` with the production domain. LinkedIn's review requires a publicly accessible privacy policy that explicitly covers LinkedIn platform data collection, storage, use, and user data deletion.
+| Privacy Policy | `https://getpostflow.vercel.app/privacy` |
+| Terms of Service | `https://getpostflow.vercel.app/terms` |
 
 ---
 

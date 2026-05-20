@@ -74,13 +74,8 @@ https://discord.com/api/oauth2/authorize?client_id=YOUR_CLIENT_ID&permissions=PE
 ## OAuth2 Redirect URIs
 
 ```
-https://staging.getpostflow.com/api/oauth/discord/callback
+https://getpostflow.vercel.app/api/oauth/discord/callback
 ```
-
-> **TODO (replace before production submission):** Add the production URI:
-> ```
-> https://getpostflow.com/api/oauth/discord/callback
-> ```
 
 ---
 
@@ -88,10 +83,8 @@ https://staging.getpostflow.com/api/oauth/discord/callback
 
 | Document | URL |
 |---|---|
-| Privacy Policy | `https://staging.getpostflow.com/privacy` |
-| Terms of Service | `https://staging.getpostflow.com/terms` |
-
-> **TODO:** Replace `staging.getpostflow.com` with the production domain. The privacy policy must address what Discord server data GetPostFlow collects, how it is stored and used, and how it can be deleted.
+| Privacy Policy | `https://getpostflow.vercel.app/privacy` |
+| Terms of Service | `https://getpostflow.vercel.app/terms` |
 
 ---
 

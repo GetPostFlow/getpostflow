@@ -12,7 +12,7 @@
 |---|---|
 | **App Name** | getpostflow |
 | **App Type** | Web app (script type if needed for initial testing) |
-| **About URL** | `https://staging.getpostflow.com` |
+| **About URL** | `https://getpostflow.vercel.app` |
 | **API Access Level** | Standard (apply for elevated access if post volume requires it) |
 
 ---
@@ -73,13 +73,8 @@ GetPostFlow's AI engagement engine supports configurable auto-response for other
 ## Redirect URIs
 
 ```
-https://staging.getpostflow.com/api/oauth/reddit/callback
+https://getpostflow.vercel.app/api/oauth/reddit/callback
 ```
-
-> **TODO (replace before production submission):** Add the production URI:
-> ```
-> https://getpostflow.com/api/oauth/reddit/callback
-> ```
 
 ---
 
@@ -87,10 +82,8 @@ https://staging.getpostflow.com/api/oauth/reddit/callback
 
 | Document | URL |
 |---|---|
-| Privacy Policy | `https://staging.getpostflow.com/privacy` |
-| Terms of Service | `https://staging.getpostflow.com/terms` |
-
-> **TODO:** Replace `staging.getpostflow.com` with the production domain. The privacy policy must explicitly cover Reddit platform data collection and usage. Include a clear statement about the Reddit auto-response prohibition.
+| Privacy Policy | `https://getpostflow.vercel.app/privacy` |
+| Terms of Service | `https://getpostflow.vercel.app/terms` |
 
 ---
 

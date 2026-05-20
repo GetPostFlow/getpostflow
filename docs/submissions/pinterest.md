@@ -57,13 +57,8 @@ GetPostFlow operates exclusively on Pinterest Business accounts. It does not acc
 ## Redirect URIs
 
 ```
-https://staging.getpostflow.com/api/oauth/pinterest/callback
+https://getpostflow.vercel.app/api/oauth/pinterest/callback
 ```
-
-> **TODO (replace before production submission):** Add the production URI:
-> ```
-> https://getpostflow.com/api/oauth/pinterest/callback
-> ```
 
 ---
 
@@ -71,10 +66,8 @@ https://staging.getpostflow.com/api/oauth/pinterest/callback
 
 | Document | URL |
 |---|---|
-| Privacy Policy | `https://staging.getpostflow.com/privacy` |
-| Terms of Service | `https://staging.getpostflow.com/terms` |
-
-> **TODO:** Replace `staging.getpostflow.com` with the production domain. Privacy policy must reference Pinterest platform data handling in compliance with Pinterest's API Terms of Service.
+| Privacy Policy | `https://getpostflow.vercel.app/privacy` |
+| Terms of Service | `https://getpostflow.vercel.app/terms` |
 
 ---
 

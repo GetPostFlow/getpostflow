@@ -5,6 +5,17 @@ This directory contains developer app submission packets for all 7 platforms req
 
 ---
 
+## Live URLs
+
+- **Production:** https://getpostflow.vercel.app
+- **Privacy:** https://getpostflow.vercel.app/privacy
+- **Terms:** https://getpostflow.vercel.app/terms
+- **Health check:** https://getpostflow.vercel.app/api/health
+
+> Custom domain (getpostflow.com) will be connected post-launch; OAuth redirects on the .vercel.app domain are sufficient for app review and can be expanded post-domain-cutover.
+
+---
+
 ## Recommended Submission Order
 
 Submit in this order — **longest review first** to minimize launch-blocking delays:
@@ -76,43 +87,31 @@ Most platforms (Meta, LinkedIn, TikTok) require business verification before gra
 
 | Page | URL | Requirement |
 |---|---|---|
-| Privacy Policy | `https://staging.getpostflow.com/privacy` → `https://getpostflow.com/privacy` | **All platforms** |
-| Terms of Service | `https://staging.getpostflow.com/terms` → `https://getpostflow.com/terms` | Meta, LinkedIn, TikTok, Discord |
-
-> **TODO:** Replace all `staging.getpostflow.com` placeholders with the production domain before any production submission. Ensure both pages are publicly accessible without login.
-
-> **Privacy Policy must explicitly cover** (for all platforms that require it):
-> - What data is collected from each social platform's API
-> - How that data is stored, used, and protected
-> - User rights (GDPR) including data deletion
-> - How users can revoke access / disconnect accounts
-> - A named contact for data-related inquiries
+| Privacy Policy | `https://getpostflow.vercel.app/privacy` | **All platforms** |
+| Terms of Service | `https://getpostflow.vercel.app/terms` | Meta, LinkedIn, TikTok, Discord |
 
 ### Demo Environment
 
 | Item | Notes |
 |---|---|
-| Staging URL | `https://staging.getpostflow.com` — must be live and functional during reviews |
+| Production URL | `https://getpostflow.vercel.app` — live and functional; use for app review submissions |
 | Test user accounts | One per platform, set up in advance (see TODO sections in each packet) |
-| Test social accounts | One real account per platform connected to the staging GetPostFlow instance |
+| Test social accounts | One real account per platform connected to the GetPostFlow instance |
 | Demo video | 3–5 min screen recording per platform (see scripts in each packet) |
 | Demo video hosting | Upload to YouTube (unlisted) or Vimeo for submission URLs — most platforms accept URL links |
 
 ---
 
-## Placeholder Domain Flags
+## Domain & OAuth Redirect Status
 
-All packets use `staging.getpostflow.com` as a placeholder domain. Before production submission:
+Production is live at `https://getpostflow.vercel.app`. All OAuth redirect URIs in the platform packets use this domain.
 
-- [ ] Replace all `staging.getpostflow.com` references in every packet with `getpostflow.com`
-- [ ] Update all redirect URIs in the respective developer consoles
-- [ ] Ensure production privacy policy and ToS URLs are live and publicly accessible
-- [ ] Re-verify domain ownership in Google Search Console, LinkedIn, and Pinterest developer portals
+- All redirect URIs updated to: `https://getpostflow.vercel.app/api/oauth/<platform>/callback`
+- Privacy and Terms pages are live at the `.vercel.app` URLs above
+- Custom domain (`getpostflow.com`) will be connected post-launch; update OAuth redirect URIs in each developer console after domain cutover
 
-> **Search for all TODOs across packets:**
-> ```
-> grep -r "TODO" /docs/submissions/
-> ```
+> **TODO:** Re-verify domain ownership in Google Search Console, LinkedIn, and Pinterest developer portals once `getpostflow.com` is connected.
+> **TODO:** After domain cutover, add `https://getpostflow.com/api/oauth/<platform>/callback` as an additional redirect URI in each developer console (keep the `.vercel.app` URI active in parallel during transition).
 
 ---
 
@@ -132,4 +131,4 @@ All packets use `staging.getpostflow.com` as a placeholder domain. Before produc
 
 ## Packet Authorship Note
 
-These packets were generated as complete submission-ready drafts based on the GetPostFlow Architecture Plan v3. All placeholder URLs (`staging.getpostflow.com`) must be replaced with the production domain before use. All `TODO` items in each packet require human action by the filing user before submission.
+These packets were generated as complete submission-ready drafts based on the GetPostFlow Architecture Plan v3. All `TODO` items in each packet require human action by the filing user before submission.
