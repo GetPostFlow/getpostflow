@@ -1,0 +1,58 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@getpostflow/ui": [
+        "packages/ui/src/index.ts"
+      ],
+      "@getpostflow/ui/*": [
+        "packages/ui/src/*"
+      ],
+      "@getpostflow/shared": [
+        "packages/shared/src/index.ts"
+      ],
+      "@getpostflow/billing": [
+        "packages/billing/src/index.ts"
+      ],
+      "@getpostflow/permissions": [
+        "packages/permissions/src/index.ts"
+      ],
+      "@getpostflow/ai": [
+        "packages/ai/src/index.ts"
+      ],
+      "@getpostflow/social": [
+        "packages/social/src/index.ts"
+      ],
+      "@getpostflow/auth": [
+        "packages/auth/src/index.ts"
+      ],
+      "@getpostflow/approvals": [
+        "packages/approvals/src/index.ts"
+      ],
+      "@getpostflow/analytics": [
+        "packages/analytics/src/index.ts"
+      ],
+      "@getpostflow/reporting": [
+        "packages/reporting/src/index.ts"
+      ],
+      "@getpostflow/db": [
+        "packages/db/src/index.ts"
+      ]
+    }
+  }
+}

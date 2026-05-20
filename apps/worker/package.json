@@ -1,0 +1,23 @@
+{
+  "name": "@getpostflow/worker",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc --project tsconfig.build.json",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@getpostflow/db": "workspace:*",
+    "@getpostflow/shared": "workspace:*",
+    "bullmq": "^5.26.0",
+    "ioredis": "^5.6.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.30",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "name": "@getpostflow/web",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@getpostflow/ai": "workspace:*",
+    "@getpostflow/analytics": "workspace:*",
+    "@getpostflow/approvals": "workspace:*",
+    "@getpostflow/auth": "workspace:*",
+    "@getpostflow/billing": "workspace:*",
+    "@getpostflow/permissions": "workspace:*",
+    "@getpostflow/shared": "workspace:*",
+    "@getpostflow/social": "workspace:*",
+    "@getpostflow/ui": "workspace:*",
+    "next": "^15.3.2",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  }
+}

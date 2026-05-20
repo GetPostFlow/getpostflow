@@ -1,0 +1,25 @@
+# fly.toml — GetPostFlow BullMQ Worker
+# Deploy with: fly deploy --config apps/worker/fly.toml
+# Build context must be the monorepo root when deploying.
+
+app = "getpostflow-worker"
+primary_region = "iad"
+
+[build]
+  dockerfile = "apps/worker/Dockerfile"
+
+[env]
+  NODE_ENV = "production"
+
+# No public HTTP service — this is a background queue worker only.
+# Add a health-check HTTP server in future if needed.
+
+[[vm]]
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1
+
+# Secrets to set via `fly secrets set`:
+#   REDIS_URL
+#   DATABASE_URL
+#   (see .env.example for the full list)
