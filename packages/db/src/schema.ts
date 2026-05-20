@@ -74,9 +74,34 @@ export const messageDirectionEnum = pgEnum("message_direction", [
   "outbound"
 ]);
 
+export const clientStatusEnum = pgEnum("client_status", [
+  "draft",
+  "intake_pending",
+  "ai_drafting",
+  "ai_drafted",
+  "strategist_review",
+  "client_review",
+  "active",
+  "archived"
+]);
+
+export const brandStrategyStatusEnum = pgEnum("brand_strategy_status", [
+  "ai_drafting",
+  "strategist_pending",
+  "strategist_approved",
+  "client_pending",
+  "client_approved",
+  "active"
+]);
+
+// ── Org / Tenant ──────────────────────────────────────────────────────────────
+
 export const orgs = pgTable("orgs", {
   id: uuid("id").defaultRandom().primaryKey(),
+  clerkOrgId: varchar("clerk_org_id", { length: 255 }).unique(),
   name: varchar("name", { length: 255 }).notNull(),
+  logoUrl: varchar("logo_url", { length: 1024 }),
+  brandColor: varchar("brand_color", { length: 32 }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
 });
 
@@ -84,15 +109,23 @@ export const clients = pgTable("clients", {
   id: uuid("id").defaultRandom().primaryKey(),
   orgId: uuid("org_id").notNull(),
   name: varchar("name", { length: 255 }).notNull(),
+  slug: varchar("slug", { length: 255 }).notNull(),
+  status: clientStatusEnum("status").notNull().default("draft"),
+  primaryContactName: varchar("primary_contact_name", { length: 255 }),
+  primaryContactEmail: varchar("primary_contact_email", { length: 255 }),
+  industry: varchar("industry", { length: 128 }),
+  targetLocales: jsonb("target_locales").notNull().default([]),
   primaryLocale: varchar("primary_locale", { length: 8 }).notNull().default("en"),
+  permissions: jsonb("permissions").notNull().default({}),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
 });
 
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
-  externalAuthId: varchar("external_auth_id", { length: 255 }).notNull(),
+  clerkUserId: varchar("clerk_user_id", { length: 255 }).notNull().unique(),
   email: varchar("email", { length: 255 }).notNull(),
   fullName: varchar("full_name", { length: 255 }),
+  avatarUrl: varchar("avatar_url", { length: 1024 }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
 });
 
@@ -104,15 +137,69 @@ export const orgMemberships = pgTable("org_memberships", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
 });
 
+// ── Billing / Plans ───────────────────────────────────────────────────────────
+
+export const plans = pgTable("plans", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  code: varchar("code", { length: 64 }).notNull().unique(),
+  name: varchar("name", { length: 255 }).notNull(),
+  monthlyPriceCents: integer("monthly_price_cents").notNull(),
+  annualPriceCents: integer("annual_price_cents").notNull(),
+  connectedSocialAccountsLimit: integer("connected_social_accounts_limit").notNull(),
+  clientSeatsLimit: integer("client_seats_limit").notNull(),
+  localeLimit: integer("locale_limit").notNull(),
+  aiTextCredits: integer("ai_text_credits").notNull(),
+  aiImageCredits: integer("ai_image_credits").notNull(),
+  aiVideoCredits: integer("ai_video_credits").notNull(),
+  aiEngagementCredits: integer("ai_engagement_credits").notNull(),
+  trialDays: integer("trial_days").notNull().default(0),
+  stripePriceIdMonthly: varchar("stripe_price_id_monthly", { length: 255 }),
+  stripePriceIdAnnual: varchar("stripe_price_id_annual", { length: 255 }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+});
+
+export const orgSubscriptions = pgTable("org_subscriptions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  orgId: uuid("org_id").notNull().unique(),
+  planCode: varchar("plan_code", { length: 64 }).notNull(),
+  stripeCustomerId: varchar("stripe_customer_id", { length: 255 }),
+  stripeSubscriptionId: varchar("stripe_subscription_id", { length: 255 }),
+  stripePriceId: varchar("stripe_price_id", { length: 255 }),
+  status: subscriptionStatusEnum("status").notNull().default("trialing"),
+  billingInterval: varchar("billing_interval", { length: 16 }).notNull().default("monthly"),
+  trialEndsAt: timestamp("trial_ends_at", { withTimezone: true }),
+  currentPeriodStart: timestamp("current_period_start", { withTimezone: true }),
+  currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),
+  cancelAtPeriodEnd: boolean("cancel_at_period_end").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull()
+});
+
+// ── Feature flags ─────────────────────────────────────────────────────────────
+
+export const featureFlags = pgTable("feature_flags", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  orgId: uuid("org_id").notNull(),
+  key: varchar("key", { length: 128 }).notNull(),
+  enabled: boolean("enabled").notNull().default(false),
+  metadata: jsonb("metadata").notNull().default({}),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+});
+
+// ── Social accounts ───────────────────────────────────────────────────────────
+
 export const socialAccounts = pgTable("social_accounts", {
   id: uuid("id").defaultRandom().primaryKey(),
-  clientId: uuid("client_id").notNull(),
+  orgId: uuid("org_id").notNull(),
+  clientId: uuid("client_id"),
   platform: varchar("platform", { length: 64 }).notNull(),
   accountName: varchar("account_name", { length: 255 }).notNull(),
   externalAccountId: varchar("external_account_id", { length: 255 }).notNull(),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
 });
+
+// ── Brand / strategy ──────────────────────────────────────────────────────────
 
 export const brandProfiles = pgTable("brand_profiles", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -131,6 +218,8 @@ export const strategies = pgTable("strategies", {
   status: approvalStatusEnum("status").notNull().default("draft"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
 });
+
+// ── Content ───────────────────────────────────────────────────────────────────
 
 export const contentItems = pgTable("content_items", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -163,6 +252,8 @@ export const approvals = pgTable("approvals", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
 });
 
+// ── Conversations ─────────────────────────────────────────────────────────────
+
 export const conversations = pgTable("conversations", {
   id: uuid("id").defaultRandom().primaryKey(),
   clientId: uuid("client_id").notNull(),
@@ -184,6 +275,8 @@ export const messages = pgTable("messages", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
 });
 
+// ── Leads / Funnels ───────────────────────────────────────────────────────────
+
 export const leads = pgTable("leads", {
   id: uuid("id").defaultRandom().primaryKey(),
   clientId: uuid("client_id").notNull(),
@@ -202,14 +295,19 @@ export const funnels = pgTable("funnels", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
 });
 
+// ── Assets ────────────────────────────────────────────────────────────────────
+
 export const assets = pgTable("assets", {
   id: uuid("id").defaultRandom().primaryKey(),
-  clientId: uuid("client_id").notNull(),
+  orgId: uuid("org_id").notNull(),
+  clientId: uuid("client_id"),
   kind: varchar("kind", { length: 64 }).notNull(),
   storageKey: varchar("storage_key", { length: 512 }).notNull(),
   metadata: jsonb("metadata").notNull().default({}),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
 });
+
+// ── Analytics ─────────────────────────────────────────────────────────────────
 
 export const analyticsEvents = pgTable("analytics_events", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -220,6 +318,8 @@ export const analyticsEvents = pgTable("analytics_events", {
   metadata: jsonb("metadata").notNull().default({}),
   capturedAt: timestamp("captured_at", { withTimezone: true }).defaultNow().notNull()
 });
+
+// ── AI learning ───────────────────────────────────────────────────────────────
 
 export const aiLearningSamples = pgTable("ai_learning_samples", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -232,42 +332,89 @@ export const aiLearningSamples = pgTable("ai_learning_samples", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
 });
 
-export const plans = pgTable("plans", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  code: varchar("code", { length: 64 }).notNull(),
-  name: varchar("name", { length: 255 }).notNull(),
-  connectedSocialAccounts: integer("connected_social_accounts").notNull(),
-  clientSeats: integer("client_seats").notNull(),
-  localeLimit: integer("locale_limit").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
-});
-
-export const subscriptions = pgTable("subscriptions", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  clientId: uuid("client_id").notNull(),
-  planId: uuid("plan_id").notNull(),
-  stripeCustomerId: varchar("stripe_customer_id", { length: 255 }).notNull(),
-  stripeSubscriptionId: varchar("stripe_subscription_id", { length: 255 }).notNull(),
-  status: subscriptionStatusEnum("status").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
-});
-
-export const featureFlags = pgTable("feature_flags", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  clientId: uuid("client_id").notNull(),
-  key: varchar("key", { length: 128 }).notNull(),
-  enabled: boolean("enabled").notNull().default(false),
-  metadata: jsonb("metadata").notNull().default({}),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
-});
+// ── Audit ─────────────────────────────────────────────────────────────────────
 
 export const auditLogs = pgTable("audit_logs", {
   id: uuid("id").defaultRandom().primaryKey(),
+  orgId: uuid("org_id"),
   clientId: uuid("client_id"),
   actorUserId: uuid("actor_user_id"),
   action: varchar("action", { length: 255 }).notNull(),
   entityType: varchar("entity_type", { length: 128 }).notNull(),
   entityId: varchar("entity_id", { length: 255 }).notNull(),
   payload: jsonb("payload").notNull().default({}),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+});
+
+// ── Ayrshare profile mapping ───────────────────────────────────────────────────
+
+/**
+ * Maps an org to an Ayrshare "profile key" (one profile per client/brand).
+ * Each profile can have multiple social platform connections.
+ * See: https://docs.ayrshare.com/profiles/manage-profiles
+ */
+export const socialAccountProfiles = pgTable("social_account_profiles", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  orgId: uuid("org_id").notNull(),
+  /**
+   * Ayrshare profile key returned when a profile is created via POST /profiles.
+   * Used as the Profile-Key header on subsequent Ayrshare API calls.
+   */
+  ayrshareProfileKey: varchar("ayrshare_profile_key", { length: 128 }).notNull(),
+  /**
+   * JSON array of platform keys connected to this profile,
+   * e.g. ["facebook", "instagram", "tiktok"]
+   */
+  platformKeys: jsonb("platform_keys").notNull().default([]),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull()
+});
+
+// ── Phase 2: Client intake + brand strategy ───────────────────────────────────
+
+export const clientIntakeSubmissions = pgTable("client_intake_submissions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  clientId: uuid("client_id").notNull(),
+  submittedByUserId: uuid("submitted_by_user_id"),
+  rawPayload: jsonb("raw_payload").notNull().default({}),
+  isDraft: boolean("is_draft").notNull().default(true),
+  submittedAt: timestamp("submitted_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+});
+
+export const clientBrandStrategies = pgTable("client_brand_strategies", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  clientId: uuid("client_id").notNull(),
+  versionInt: integer("version_int").notNull().default(1),
+  status: brandStrategyStatusEnum("status").notNull().default("ai_drafting"),
+  draftPayload: jsonb("draft_payload").notNull().default({}),
+  editedPayload: jsonb("edited_payload").notNull().default({}),
+  aiMetadata: jsonb("ai_metadata").notNull().default({}),
+  strategistComments: jsonb("strategist_comments").notNull().default([]),
+  clientComments: jsonb("client_comments").notNull().default([]),
+  approvedAt: timestamp("approved_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+});
+
+export const portalTokens = pgTable("portal_tokens", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  clientId: uuid("client_id").notNull(),
+  tokenHash: varchar("token_hash", { length: 255 }).notNull().unique(),
+  email: varchar("email", { length: 255 }).notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  usedAt: timestamp("used_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+});
+
+export const notifications = pgTable("notifications", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  orgId: uuid("org_id").notNull(),
+  userId: uuid("user_id"),
+  kind: varchar("kind", { length: 64 }).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  body: text("body"),
+  linkHref: varchar("link_href", { length: 1024 }),
+  read: boolean("read").notNull().default(false),
+  metadata: jsonb("metadata").notNull().default({}),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
 });

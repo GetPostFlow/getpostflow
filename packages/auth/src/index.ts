@@ -24,3 +24,6 @@ export function assertAuthEnv(): void {
     );
   }
 }
+
+export { auth, currentUser, clerkClient } from "@clerk/nextjs/server";
+export { useAuth, useUser, useOrganization, useOrganizationList } from "@clerk/nextjs";

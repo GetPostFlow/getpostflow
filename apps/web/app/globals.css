@@ -14,7 +14,9 @@
   --brand-success: #708b75;
   --brand-warning: #a67c52;
   --brand-danger: #a35d5d;
+  --text-muted: #8b9099;
 }
+
 
 * {
   box-sizing: border-box;

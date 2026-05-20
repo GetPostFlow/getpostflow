@@ -1,6 +1,5 @@
-import { plans } from "@getpostflow/billing";
+import { PLANS, PLAN_ORDER } from "@getpostflow/billing";
 import { launchPlatforms } from "@getpostflow/social";
-import { Button } from "@getpostflow/ui/button";
 
 const highlights = [
   "Unified publishing and approvals",
@@ -25,8 +24,11 @@ export default function MarketingHomePage() {
           </div>
           <nav className="hidden gap-6 text-sm text-[var(--text-secondary)] md:flex">
             <a href="#features">Features</a>
-            <a href="#pricing">Pricing</a>
-            <a href="/dashboard">Dashboard</a>
+            <a href="/pricing">Pricing</a>
+            <a href="/sign-up">Sign up</a>
+            <a href="/dashboard" className="rounded-xl px-4 py-1.5 text-white text-xs font-medium" style={{ background: "var(--brand-primary)" }}>
+              Dashboard
+            </a>
           </nav>
         </header>
 
@@ -44,10 +46,20 @@ export default function MarketingHomePage() {
               all launch platforms.
             </p>
             <div className="mt-8 flex flex-wrap gap-4">
-              <Button href="#pricing">Explore pricing</Button>
-              <Button href="/dashboard" tone="secondary">
-                Open dashboard shell
-              </Button>
+              <a
+                href="/sign-up"
+                className="inline-flex rounded-xl px-5 py-2.5 text-sm font-medium text-white transition hover:opacity-90"
+                style={{ background: "var(--brand-primary)" }}
+              >
+                Start 14-day free trial
+              </a>
+              <a
+                href="/pricing"
+                className="inline-flex rounded-xl border px-5 py-2.5 text-sm font-medium transition hover:bg-[var(--subtle)]"
+                style={{ borderColor: "var(--border-soft)", color: "var(--brand-primary)" }}
+              >
+                View pricing
+              </a>
             </div>
             <div className="mt-10 grid gap-3 sm:grid-cols-2">
               {highlights.map((item) => (
@@ -129,41 +141,55 @@ export default function MarketingHomePage() {
             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--brand-primary)]">
               Pricing and packaging
             </p>
-            <h2 className="mt-3 text-4xl font-semibold">Competitive pricing with built-in approvals and AI ops</h2>
+            <h2 className="mt-3 text-4xl font-semibold">Simple, transparent pricing</h2>
+            <p className="mt-2 text-sm text-[var(--text-secondary)]">
+              Starter &amp; Growth include a 14-day free trial. No card required.{" "}
+              <a href="/pricing" className="underline" style={{ color: "var(--brand-primary)" }}>
+                See full comparison →
+              </a>
+            </p>
           </div>
           <div className="grid gap-6 xl:grid-cols-4">
-            {plans.map((plan) => (
-              <article key={plan.id} className="content-card flex h-full flex-col p-6">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h3 className="text-2xl font-semibold">{plan.name}</h3>
-                    <p className="mt-2 text-sm text-[var(--text-secondary)]">
-                      {plan.monthlyPrice}
-                    </p>
-                    <p className="text-sm text-[var(--text-secondary)]">
-                      {plan.annualPrice}
-                    </p>
+            {PLAN_ORDER.filter((c) => c !== "enterprise").map((code) => {
+              const plan = PLANS[code];
+              return (
+                <article key={code} className="content-card flex h-full flex-col p-6">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h3 className="text-2xl font-semibold">{plan.name}</h3>
+                      <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                        {plan.monthlyDisplay}
+                      </p>
+                      <p className="text-sm text-[var(--text-secondary)]">
+                        {plan.annualDisplay} billed annually
+                      </p>
+                    </div>
+                    <span className="rounded-full bg-[var(--subtle)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--brand-primary)]">
+                      {plan.connectedSocialAccountsLimit} accts
+                    </span>
                   </div>
-                  <span className="rounded-full bg-[var(--subtle)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--brand-primary)]">
-                    {plan.connectedSocialAccounts} accounts
-                  </span>
-                </div>
-                <ul className="mt-6 space-y-3 text-sm text-[var(--text-secondary)]">
-                  <li>Up to {plan.connectedSocialAccounts} connected social accounts</li>
-                  <li>{plan.clientSeats} client seats</li>
-                  <li>{plan.locales} locales included</li>
-                  <li>{plan.aiTextCredits} AI text credits</li>
-                  <li>{plan.aiImageCredits} AI image credits</li>
-                  <li>{plan.aiVideoCredits} AI video credits</li>
-                  <li>{plan.aiEngagementCredits} AI engagement credits</li>
-                </ul>
-                <div className="mt-6 rounded-2xl border border-[var(--border-soft)] bg-white px-4 py-3 text-xs leading-6 text-[var(--text-secondary)]">
-                  <strong className="text-[var(--text-primary)]">Pricing note:</strong> billed
-                  monthly or billed annually at a discounted effective monthly rate. Annual total
-                  is shown explicitly on every plan.
-                </div>
-              </article>
-            ))}
+                  {plan.trialDays > 0 && (
+                    <p className="mt-2 text-xs font-medium" style={{ color: "var(--brand-success)" }}>
+                      {plan.trialDays}-day free trial
+                    </p>
+                  )}
+                  <ul className="mt-6 space-y-2 text-sm text-[var(--text-secondary)]">
+                    <li>{plan.connectedSocialAccountsLimit} connected social accounts</li>
+                    <li>{plan.clientSeatsLimit} client seats</li>
+                    <li>{typeof plan.localeLimit === "number" ? plan.localeLimit : "Unlimited"} locales</li>
+                    <li>{typeof plan.aiTextCredits === "number" ? plan.aiTextCredits : "Custom"} AI text credits / mo</li>
+                    <li>{typeof plan.aiImageCredits === "number" ? plan.aiImageCredits : "Custom"} AI image credits / mo</li>
+                  </ul>
+                  <a
+                    href={`/sign-up?plan=${code}`}
+                    className="mt-auto block rounded-xl px-4 py-2 text-center text-sm font-medium text-white transition hover:opacity-90 mt-6"
+                    style={{ background: "var(--brand-primary)" }}
+                  >
+                    {plan.trialDays > 0 ? "Start free trial" : "Get started"}
+                  </a>
+                </article>
+              );
+            })}
           </div>
         </section>
       </section>

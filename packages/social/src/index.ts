@@ -26,6 +26,8 @@ export * from "./policies";
 export * from "./types";
 export * from "./connector";
 export * from "./registry";
+
+// ─── Direct connectors ────────────────────────────────────────────────────────
 export * from "./connectors/facebook";
 export * from "./connectors/instagram";
 export * from "./connectors/tiktok";
@@ -35,3 +37,6 @@ export * from "./connectors/linkedin";
 export * from "./connectors/pinterest";
 export * from "./connectors/reddit";
 export * from "./connectors/discord";
+
+// ─── Ayrshare connectors ──────────────────────────────────────────────────────
+export * from "./connectors/ayrshare/index";

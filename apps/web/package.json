@@ -8,6 +8,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@clerk/nextjs": "^7.3.7",
     "@getpostflow/ai": "workspace:*",
     "@getpostflow/analytics": "workspace:*",
     "@getpostflow/approvals": "workspace:*",
@@ -17,8 +18,11 @@
     "@getpostflow/shared": "workspace:*",
     "@getpostflow/social": "workspace:*",
     "@getpostflow/ui": "workspace:*",
+    "drizzle-orm": "^0.44.7",
     "next": "^15.3.2",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "stripe": "^22.1.1",
+    "svix": "^1.94.0"
   }
 }

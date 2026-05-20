@@ -1,0 +1,10 @@
+export { AyrshareFacebookConnector } from "./ayrshare-facebook";
+export { AyrshareInstagramConnector } from "./ayrshare-instagram";
+export { AyrshareTikTokConnector } from "./ayrshare-tiktok";
+export { AyrshareYouTubeConnector } from "./ayrshare-youtube";
+export { AyrshareYouTubeShortsConnector } from "./ayrshare-youtube-shorts";
+export { AyrshareLinkedInConnector } from "./ayrshare-linkedin";
+export { AyrsharePinterestConnector } from "./ayrshare-pinterest";
+export { AyrshareRedditConnector } from "./ayrshare-reddit";
+export { AyrshareDiscordConnector } from "./ayrshare-discord";
+export * from "./client";

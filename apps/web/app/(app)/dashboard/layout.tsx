@@ -1,7 +1,14 @@
-export default function DashboardLayout({
-  children
-}: Readonly<{
+import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
+import DashboardShell from "./shell";
+
+export default async function DashboardLayout({
+  children,
+}: {
   children: React.ReactNode;
-}>) {
-  return children;
+}) {
+  const { userId } = await auth();
+  if (!userId) redirect("/sign-in");
+
+  return <DashboardShell>{children}</DashboardShell>;
 }
