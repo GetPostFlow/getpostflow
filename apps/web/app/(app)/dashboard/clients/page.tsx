@@ -1,169 +1,86 @@
+"use client";
 
-import { createDb } from "@getpostflow/db";
-import { clients, orgs } from "@getpostflow/db";
-import { eq } from "drizzle-orm";
-import { Badge } from "@getpostflow/ui/badge";
-import { Card, CardContent, CardHeader } from "@getpostflow/ui/card";
-import { EmptyState } from "@getpostflow/ui/empty-state";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ClientPortalButton } from "./_client-portal-button";
+import { Card, CardHeader, CardContent, CardFooter } from "@getpostflow/ui";
 
-const STATUS_LABELS: Record<string, string> = {
-  draft: "Draft",
-  intake_pending: "Intake Pending",
-  ai_drafting: "AI Drafting",
-  ai_drafted: "AI Drafted",
-  strategist_review: "Strategist Review",
-  client_review: "Client Review",
-  active: "Active",
-  archived: "Archived",
-};
+export default function ClientsPage() {
+  const [clients, setClients] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-const STATUS_VARIANT: Record<string, "default" | "success" | "warning" | "danger" | "muted"> = {
-  draft: "muted",
-  intake_pending: "warning",
-  ai_drafting: "default",
-  ai_drafted: "default",
-  strategist_review: "warning",
-  client_review: "warning",
-  active: "success",
-  archived: "muted",
-};
+  useEffect(() => {
+    fetch("/api/clients")
+      .then((res) => res.json())
+      .then((data) => {
+        setClients(data.clients || []);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
 
-export default async function ClientsPage() {
-  const { auth } = await import("@clerk/nextjs/server");
-  const { userId, orgId } = await auth();
-  
-  if (!userId || !orgId) {
+  if (loading) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold" style={{ fontFamily: "var(--font-heading)" }}>Clients</h1>
-        </div>
-        <EmptyState
-          title="Sign in to view clients"
-          description="Please sign in to access your client list."
-          action={<Link href="/sign-in" className="text-[#2F5D62] hover:underline">Sign In</Link>}
-        />
+      <div className="space-y-6 p-6">
+        <h1 className="text-2xl font-bold" style={{ fontFamily: "var(--font-heading)" }}>Clients</h1>
+        <p>Loading...</p>
       </div>
     );
   }
 
-  const db = createDb(process.env.DATABASE_URL!);
-
-  const [org] = await db
-    .select({ id: orgs.id, slug: orgs.clerkOrgId })
-    .from(orgs)
-    .where(eq(orgs.clerkOrgId, orgId))
-    .limit(1);
-
-  const clientList = org
-    ? await db
-        .select()
-        .from(clients)
-        .where(eq(clients.orgId, org.id))
-        .orderBy(clients.createdAt)
-    : [];
+  if (clients.length === 0) {
+    return (
+      <div className="space-y-6 p-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold" style={{ fontFamily: "var(--font-heading)" }}>Clients</h1>
+          <Link
+            href="/dashboard/clients/new"
+            className="inline-flex items-center rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
+            style={{ background: "#2F5D62" }}
+          >
+            + New Client
+          </Link>
+        </div>
+        <Card>
+          <CardContent className="p-8 text-center">
+            <p className="text-muted-foreground">No clients yet. Create your first client to get started.</p>
+            <Link
+              href="/dashboard/clients/new"
+              className="mt-4 inline-flex items-center rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
+              style={{ background: "#2F5D62" }}
+            >
+              Create Client
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* Header */}
+    <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold" style={{ color: "var(--text-primary)" }}>
-            Clients
-          </h1>
-          <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
-            Manage your client accounts and brand strategies.
-          </p>
-        </div>
+        <h1 className="text-2xl font-bold" style={{ fontFamily: "var(--font-heading)" }}>Clients</h1>
         <Link
           href="/dashboard/clients/new"
-          className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
-          style={{ background: "var(--brand-primary)" }}
+          className="inline-flex items-center rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
+          style={{ background: "#2F5D62" }}
         >
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-            <path d="M8 2v12M2 8h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          </svg>
-          New Client
+          + New Client
         </Link>
       </div>
 
-      {/* Stats row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[
-          { label: "Total Clients", value: clientList.length },
-          { label: "Active", value: clientList.filter((c) => c.status === "active").length },
-          { label: "In Review", value: clientList.filter((c) => ["strategist_review", "client_review"].includes(c.status)).length },
-          { label: "Pending Intake", value: clientList.filter((c) => c.status === "intake_pending").length },
-        ].map((stat) => (
-          <Card key={stat.label}>
-            <CardContent>
-              <p className="text-xs mt-2" style={{ color: "var(--text-muted)" }}>{stat.label}</p>
-              <p className="text-2xl font-bold mt-1" style={{ color: "var(--text-primary)" }}>{stat.value}</p>
-            </CardContent>
-          </Card>
+      <div className="grid gap-4">
+        {clients.map((client) => (
+          <Link key={client.id} href={`/dashboard/clients/${client.slug}`}>
+            <Card className="hover:shadow-md transition">
+              <CardHeader>
+                <h3 className="text-lg font-semibold">{client.name}</h3>
+                <p className="text-sm text-muted-foreground">{client.status}</p>
+              </CardHeader>
+            </Card>
+          </Link>
         ))}
       </div>
-
-      {/* Client list */}
-      {clientList.length === 0 ? (
-        <EmptyState
-          title="No clients yet"
-          description="Create your first client to get started with the onboarding process."
-          action={
-            <Link
-              href="/dashboard/clients/new"
-              className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
-              style={{ background: "var(--brand-primary)" }}
-            >
-              Create First Client
-            </Link>
-          }
-        />
-      ) : (
-        <div className="flex flex-col gap-3">
-          {clientList.map((client) => (
-            <div
-              key={client.id}
-              className="flex items-center justify-between rounded-2xl border p-4 transition hover:border-[var(--brand-primary)]/30 hover:shadow-sm"
-              style={{ borderColor: "var(--border-soft)", background: "var(--surface)" }}
-            >
-              <Link
-                href={`/dashboard/clients/${client.id}`}
-                className="flex items-center gap-4 flex-1 min-w-0"
-              >
-                {/* Avatar */}
-                <div
-                  className="flex h-10 w-10 items-center justify-center rounded-xl text-sm font-bold text-white flex-shrink-0"
-                  style={{ background: "var(--brand-primary)" }}
-                >
-                  {client.name.charAt(0).toUpperCase()}
-                </div>
-                <div className="min-w-0">
-                  <p className="font-medium text-sm" style={{ color: "var(--text-primary)" }}>
-                    {client.name}
-                  </p>
-                  <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
-                    {client.industry ?? "No industry"} · {client.primaryLocale.toUpperCase()}
-                  </p>
-                </div>
-              </Link>
-              <div className="flex items-center gap-3 flex-shrink-0">
-                <ClientPortalButton clientId={client.id} />
-                <Badge variant={STATUS_VARIANT[client.status] ?? "muted"}>
-                  {STATUS_LABELS[client.status] ?? client.status}
-                </Badge>
-                <Link href={`/dashboard/clients/${client.id}`} aria-label="Open client workspace">
-                  <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" style={{ color: "var(--text-muted)" }}>
-                    <path d="M6 3l5 5-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-                  </svg>
-                </Link>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
