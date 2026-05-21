@@ -1,5 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
-import { redirect } from "next/navigation";
+
 import { createDb } from "@getpostflow/db";
 import { clients, orgs } from "@getpostflow/db";
 import { eq } from "drizzle-orm";
@@ -32,9 +31,23 @@ const STATUS_VARIANT: Record<string, "default" | "success" | "warning" | "danger
 };
 
 export default async function ClientsPage() {
+  const { auth } = await import("@clerk/nextjs/server");
   const { userId, orgId } = await auth();
-  if (!userId) redirect("/sign-in");
-  if (!orgId) redirect("/dashboard");
+  
+  if (!userId || !orgId) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold" style={{ fontFamily: "var(--font-heading)" }}>Clients</h1>
+        </div>
+        <EmptyState
+          title="Sign in to view clients"
+          description="Please sign in to access your client list."
+          action={<Link href="/sign-in" className="text-[#2F5D62] hover:underline">Sign In</Link>}
+        />
+      </div>
+    );
+  }
 
   const db = createDb(process.env.DATABASE_URL!);
 

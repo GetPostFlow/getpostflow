@@ -1,5 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
-import { redirect } from "next/navigation";
+
 import { createDb } from "@getpostflow/db";
 import { clients, orgs, clientBrandStrategies } from "@getpostflow/db";
 import { eq, desc } from "drizzle-orm";
@@ -32,10 +31,7 @@ const STRATEGY_STATUS_VARIANT: Record<string, "default" | "success" | "warning" 
 };
 
 export default async function StrategyReviewsPage() {
-  const { userId, orgId } = await auth();
-  if (!userId) redirect("/sign-in");
-  if (!orgId) redirect("/dashboard");
-
+    
   const db = createDb(process.env.DATABASE_URL!);
 
   const [org] = await db

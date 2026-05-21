@@ -1,5 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
-import { redirect } from "next/navigation";
+
 import { createDb } from "@getpostflow/db";
 import { clients, orgs, contentItems } from "@getpostflow/db";
 import { eq, desc } from "drizzle-orm";
@@ -26,10 +25,7 @@ const PLATFORM_COLOR: Record<string, string> = {
 };
 
 export default async function ClientApprovalsPage() {
-  const { userId, orgId } = await auth();
-  if (!userId) redirect("/sign-in");
-  if (!orgId) redirect("/dashboard");
-
+    
   const db = createDb(process.env.DATABASE_URL!);
 
   const [org] = await db
