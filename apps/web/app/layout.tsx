@@ -1,24 +1,79 @@
 import type { Metadata } from "next";
-import { Inter, Plus_Jakarta_Sans } from "next/font/google";
+import { Poppins, Montserrat, DM_Sans } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 
-const inter = Inter({
+const poppins = Poppins({
   subsets: ["latin"],
-  variable: "--font-inter",
+  weight: ["600", "700"],
+  variable: "--font-heading",
   display: "swap",
 });
 
-const plusJakartaSans = Plus_Jakarta_Sans({
+const montserrat = Montserrat({
   subsets: ["latin"],
-  variable: "--font-display",
+  weight: ["500", "600"],
+  variable: "--font-subtitle",
   display: "swap",
 });
+
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-body",
+  display: "swap",
+});
+
+const BASE_URL = "https://getpostflow.com";
 
 export const metadata: Metadata = {
-  title: "GetPostFlow",
+  metadataBase: new URL(BASE_URL),
+  title: {
+    default: "GetPostFlow — Done-for-You Social Media Management",
+    template: "%s | GetPostFlow",
+  },
   description:
-    "AI-powered social community management, multilingual content creation, approvals, and reporting.",
+    "GetPostFlow is a done-for-you social media management service. Real strategists plan your content, manage your community, and send monthly reports while you focus on your business.",
+  keywords: ["social media management", "done-for-you social media", "social media agency", "content creation", "community management"],
+  authors: [{ name: "GetPostFlow", url: BASE_URL }],
+  creator: "GetPostFlow",
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: BASE_URL,
+    siteName: "GetPostFlow",
+    title: "GetPostFlow — Done-for-You Social Media Management",
+    description: "Real strategists plan your content, manage your community, and send monthly reports.",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "GetPostFlow — Done-for-You Social Media Management",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "GetPostFlow — Done-for-You Social Media Management",
+    description: "Real strategists plan your content, manage your community, and send monthly reports.",
+    images: ["/og-image.png"],
+    creator: "@getpostflow",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  alternates: {
+    canonical: BASE_URL,
+  },
 };
 
 // Preview/stub mode: ClerkProvider is only mounted when a real publishable key is present.
@@ -47,7 +102,7 @@ export default function RootLayout({
 }>) {
   return (
     <MaybeClerkProvider>
-      <html lang="en" className={`${inter.variable} ${plusJakartaSans.variable}`}>
+      <html lang="en" className={`${poppins.variable} ${montserrat.variable} ${dmSans.variable}`}>
         <body>{children}</body>
       </html>
     </MaybeClerkProvider>

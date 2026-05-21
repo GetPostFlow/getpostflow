@@ -1,0 +1,31 @@
+{
+  "nav": {
+    "features": "Features",
+    "howItWorks": "How it works",
+    "pricing": "Pricing",
+    "blog": "Blog",
+    "signIn": "Sign in",
+    "startTrial": "Start free trial"
+  },
+  "hero": {
+    "eyebrow": "Done-for-you social media management",
+    "headline": "Your social media, handled.",
+    "body": "GetPostFlow is a done-for-you social media service. Real strategists plan your content, create your posts, manage your community, and send you monthly reports, while you focus on running your business.",
+    "ctaPrimary": "Start 14-day free trial",
+    "ctaSecondary": "See how it works",
+    "noCard": "No credit card required for trial. Cancel anytime."
+  },
+  "footer": {
+    "tagline": "Done-for-you social media management for growing businesses.",
+    "copyright": "© 2025 GetPostFlow. All rights reserved.",
+    "product": "Product",
+    "company": "Company",
+    "legal": "Legal"
+  },
+  "common": {
+    "learnMore": "Learn more",
+    "getStarted": "Get started",
+    "contactUs": "Contact us",
+    "readMore": "Read more"
+  }
+}

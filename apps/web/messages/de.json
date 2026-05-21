@@ -1,0 +1,31 @@
+{
+  "nav": {
+    "features": "Funktionen",
+    "howItWorks": "Wie es funktioniert",
+    "pricing": "Preise",
+    "blog": "Blog",
+    "signIn": "Anmelden",
+    "startTrial": "Kostenlos testen"
+  },
+  "hero": {
+    "eyebrow": "Social-Media-Management für Sie",
+    "headline": "Ihre Social Media, verwaltet.",
+    "body": "GetPostFlow ist ein vollständig verwalteter Social-Media-Service. Echte Strategen planen Ihre Inhalte, erstellen Ihre Beiträge, verwalten Ihre Community und senden Ihnen monatliche Berichte.",
+    "ctaPrimary": "14-Tage-Test starten",
+    "ctaSecondary": "So funktioniert es",
+    "noCard": "Keine Kreditkarte für den Test erforderlich. Jederzeit kündbar."
+  },
+  "footer": {
+    "tagline": "Social-Media-Management für wachsende Unternehmen.",
+    "copyright": "© 2025 GetPostFlow. Alle Rechte vorbehalten.",
+    "product": "Produkt",
+    "company": "Unternehmen",
+    "legal": "Rechtliches"
+  },
+  "common": {
+    "learnMore": "Mehr erfahren",
+    "getStarted": "Loslegen",
+    "contactUs": "Kontakt",
+    "readMore": "Mehr lesen"
+  }
+}

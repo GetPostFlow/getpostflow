@@ -3,3 +3,5 @@ packages:
   - "packages/*"
 onlyBuiltDependencies:
   - "esbuild"
+overrides:
+  drizzle-orm: "0.44.7"

@@ -75,3 +75,11 @@ export * from "./providers/sora";
 // ─── Phase 2 additions ────────────────────────────────────────────────────────
 
 export * from "./brand-strategy";
+
+// ─── Phase 3 additions ────────────────────────────────────────────────────────
+
+export * from "./content-engine";
+
+// ─── Phase 6 additions ────────────────────────────────────────────────────────
+
+export * from "./learning-loop";

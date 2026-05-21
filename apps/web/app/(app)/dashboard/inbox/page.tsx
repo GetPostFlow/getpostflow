@@ -1,25 +1,36 @@
-import { autoEngagementDefaults } from "@getpostflow/social";
+import type { Metadata } from "next";
+import InboxClient from "./_inbox-client";
 
-export default function InboxPage() {
+export const metadata: Metadata = {
+  title: "Inbox — GetPostFlow",
+  description: "All incoming messages, comments, and DMs across your clients' connected social accounts.",
+};
+
+interface Props {
+  searchParams: Promise<{ client?: string }>;
+}
+
+export default async function InboxPage({ searchParams }: Props) {
+  const { client } = await searchParams;
   return (
-    <main className="site-shell min-h-screen px-6 py-10">
-      <div className="mx-auto max-w-6xl">
-        <section className="content-card p-8">
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--brand-primary)]">
-            Community inbox
-          </p>
-          <h1 className="mt-3 text-4xl font-semibold">Policy-controlled AI engagement foundation</h1>
-          <div className="mt-6 grid gap-4 md:grid-cols-2">
-            {autoEngagementDefaults.map((policy) => (
-              <div key={policy.category} className="rounded-3xl border border-[var(--border-soft)] bg-white p-5">
-                <h2 className="text-lg font-semibold">{policy.category}</h2>
-                <p className="mt-2 text-sm text-[var(--brand-primary)]">{policy.defaultHandling}</p>
-                <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">{policy.notes}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-      </div>
-    </main>
+    <div className="px-6 py-6">
+      {client && (
+        <div
+          className="mb-4 flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs"
+          style={{ background: "rgba(47,93,98,0.07)", border: "1px solid rgba(47,93,98,0.15)" }}
+        >
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+            <path d="M8 1a5.5 5.5 0 0 0-5.5 5.5v2L1 10v1h14v-1l-1.5-1.5v-2A5.5 5.5 0 0 0 8 1zm0 14a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2z" fill="var(--brand-primary)" />
+          </svg>
+          <span style={{ color: "var(--brand-primary)", fontWeight: 500 }}>
+            Viewing conversations for selected client. Clear client filter to see all.
+          </span>
+          <a href="/dashboard/inbox" className="ml-auto text-xs underline" style={{ color: "var(--text-muted)" }}>
+            Clear filter
+          </a>
+        </div>
+      )}
+      <InboxClient />
+    </div>
   );
 }

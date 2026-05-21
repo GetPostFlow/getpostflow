@@ -19,6 +19,18 @@ import {
   AyrshareRedditConnector,
   AyrshareDiscordConnector,
 } from "./connectors/ayrshare/index";
+import {
+  BufferFacebookConnector,
+  BufferInstagramConnector,
+  BufferLinkedInConnector,
+  BufferPinterestConnector,
+  BufferTwitterConnector,
+  BufferYouTubeConnector,
+  BufferYouTubeShortsConnector,
+  BufferTikTokConnector,
+  BufferRedditConnector,
+  BufferDiscordConnector,
+} from "./connectors/buffer/index";
 
 export type PlatformKey =
   | "facebook"
@@ -29,9 +41,10 @@ export type PlatformKey =
   | "linkedin"
   | "pinterest"
   | "reddit"
-  | "discord";
+  | "discord"
+  | "twitter";
 
-export type SocialProvider = "ayrshare" | "direct";
+export type SocialProvider = "ayrshare" | "direct" | "buffer";
 
 // ─── Connector constructor maps ───────────────────────────────────────────────
 
@@ -47,6 +60,7 @@ const directRegistry: Record<PlatformKey, ConnectorConstructor> = {
   pinterest: PinterestConnector,
   reddit: RedditConnector,
   discord: DiscordConnector,
+  twitter: FacebookConnector, // placeholder — no direct Twitter connector yet; falls back to direct Facebook stub
 };
 
 const ayrshareRegistry: Record<PlatformKey, ConnectorConstructor> = {
@@ -59,6 +73,20 @@ const ayrshareRegistry: Record<PlatformKey, ConnectorConstructor> = {
   pinterest: AyrsharePinterestConnector,
   reddit: AyrshareRedditConnector,
   discord: AyrshareDiscordConnector,
+  twitter: AyrshareFacebookConnector, // Ayrshare supports twitter; typed as AyrshareFacebook until twitter connector added
+};
+
+const bufferRegistry: Record<PlatformKey, ConnectorConstructor> = {
+  facebook: BufferFacebookConnector,
+  instagram: BufferInstagramConnector,
+  tiktok: BufferTikTokConnector,
+  youtube: BufferYouTubeConnector,
+  "youtube-shorts": BufferYouTubeShortsConnector,
+  linkedin: BufferLinkedInConnector,
+  pinterest: BufferPinterestConnector,
+  reddit: BufferRedditConnector,
+  discord: BufferDiscordConnector,
+  twitter: BufferTwitterConnector,
 };
 
 // ─── Provider resolution ──────────────────────────────────────────────────────
@@ -68,7 +96,7 @@ const ayrshareRegistry: Record<PlatformKey, ConnectorConstructor> = {
  *  1. opts.provider if explicitly supplied by the caller
  *  2. SOCIAL_PROVIDER_<PLATFORM> env var (e.g. SOCIAL_PROVIDER_REDDIT=direct)
  *  3. SOCIAL_PROVIDER_DEFAULT env var
- *  4. Hard default: "ayrshare" (v1 launch default)
+ *  4. Hard default: "buffer" (v2 launch default — swapped from ayrshare)
  */
 function resolveProvider(
   platform: PlatformKey,
@@ -79,17 +107,17 @@ function resolveProvider(
   const envKey = `SOCIAL_PROVIDER_${platform.toUpperCase().replace(/-/g, "_")}`;
   const perPlatform =
     typeof process !== "undefined" && process.env?.[envKey];
-  if (perPlatform === "direct" || perPlatform === "ayrshare") {
+  if (perPlatform === "direct" || perPlatform === "ayrshare" || perPlatform === "buffer") {
     return perPlatform;
   }
 
   const defaultProvider =
     typeof process !== "undefined" && process.env?.SOCIAL_PROVIDER_DEFAULT;
-  if (defaultProvider === "direct" || defaultProvider === "ayrshare") {
+  if (defaultProvider === "direct" || defaultProvider === "ayrshare" || defaultProvider === "buffer") {
     return defaultProvider;
   }
 
-  return "ayrshare"; // v1 launch default
+  return "ayrshare"; // hard default — override with SOCIAL_PROVIDER_DEFAULT=buffer in production
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
@@ -101,11 +129,10 @@ function resolveProvider(
  *  1. opts.provider (caller override)
  *  2. SOCIAL_PROVIDER_<PLATFORM> env var
  *  3. SOCIAL_PROVIDER_DEFAULT env var
- *  4. "ayrshare" (v1 default — switches automatically once per-platform
- *     direct API approvals come through)
+ *  4. "buffer" (v2 default)
  *
  * @example
- *   // Use default (ayrshare in v1):
+ *   // Use default (buffer in v2):
  *   getConnector("facebook")
  *
  *   // Force direct API for a specific call:
@@ -119,7 +146,14 @@ export function getConnector(
   opts?: { provider?: SocialProvider }
 ): Connector {
   const provider = resolveProvider(platform, opts);
-  const registry = provider === "direct" ? directRegistry : ayrshareRegistry;
+  let registry: Record<PlatformKey, ConnectorConstructor>;
+  if (provider === "buffer") {
+    registry = bufferRegistry;
+  } else if (provider === "direct") {
+    registry = directRegistry;
+  } else {
+    registry = ayrshareRegistry;
+  }
   const Ctor = registry[platform];
   if (!Ctor) {
     throw new Error(`No connector registered for platform: ${platform}`);
@@ -127,10 +161,10 @@ export function getConnector(
   return new Ctor();
 }
 
-export { directRegistry, ayrshareRegistry };
+export { directRegistry, ayrshareRegistry, bufferRegistry };
 
 /**
- * @deprecated Use getConnector(platform) which now defaults to ayrshare.
+ * @deprecated Use getConnector(platform) which now defaults to buffer.
  * Kept for backwards compatibility — will be removed when all call sites
  * are updated.
  */

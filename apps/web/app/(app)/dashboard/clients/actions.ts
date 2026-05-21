@@ -205,8 +205,30 @@ export async function strategistApproveStrategy(strategyId: string, editedPayloa
     .set({ status: "client_review" })
     .where(eq(clients.id, strategy.clientId));
 
-  // Create notification + send email (handled separately)
-  return { success: true, clientId: strategy.clientId };
+  // Send magic link to primary contact email if available
+  const [clientRecord] = await database
+    .select({ primaryContactEmail: clients.primaryContactEmail, slug: clients.slug, orgId: clients.orgId })
+    .from(clients)
+    .where(eq(clients.id, strategy.clientId))
+    .limit(1);
+
+  let stubUrl: string | undefined;
+  if (clientRecord?.primaryContactEmail) {
+    try {
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+      const res = await fetch(`${appUrl}/api/portal/auth`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId: strategy.clientId, email: clientRecord.primaryContactEmail }),
+      });
+      const data = await res.json();
+      if (data.stubUrl) stubUrl = data.stubUrl as string;
+    } catch (e) {
+      console.error('[strategistApprove] Failed to send magic link:', e);
+    }
+  }
+
+  return { success: true, clientId: strategy.clientId, stubUrl };
 }
 
 // ─── Add strategist comment ───────────────────────────────────────────────────
@@ -299,6 +321,53 @@ export async function clientApproveStrategy(strategyId: string, tokenHash: strin
   return { success: true };
 }
 
+// ─── Strategist: regenerate a section ────────────────────────────────────────
+
+export async function regenerateSection(
+  strategyId: string,
+  sectionKey: string
+) {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
+
+  const database = db();
+  const { clientBrandStrategies, clientIntakeSubmissions } = await import("@getpostflow/db");
+  const { eq } = await import("drizzle-orm");
+
+  const [strategy] = await database
+    .select()
+    .from(clientBrandStrategies)
+    .where(eq(clientBrandStrategies.id, strategyId))
+    .limit(1);
+
+  if (!strategy) throw new Error("Strategy not found");
+
+  const [intake] = await database
+    .select()
+    .from(clientIntakeSubmissions)
+    .where(eq(clientIntakeSubmissions.clientId, strategy.clientId))
+    .limit(1);
+
+  const { generateBrandStrategySection } = await import("@getpostflow/ai");
+  type SectionKey = Parameters<typeof generateBrandStrategySection>[1];
+  const currentDraft = strategy.editedPayload as Parameters<typeof generateBrandStrategySection>[2];
+
+  const updated = await generateBrandStrategySection(
+    (intake?.rawPayload ?? {}) as Parameters<typeof generateBrandStrategySection>[0],
+    sectionKey as SectionKey,
+    currentDraft
+  );
+
+  const newEdited = { ...(strategy.editedPayload as Record<string, unknown>), ...updated };
+
+  await database
+    .update(clientBrandStrategies)
+    .set({ editedPayload: newEdited })
+    .where(eq(clientBrandStrategies.id, strategyId));
+
+  return { success: true, section: updated };
+}
+
 // ─── Client portal: request changes ──────────────────────────────────────────
 
 export async function clientRequestChanges(
@@ -351,4 +420,44 @@ export async function clientRequestChanges(
     .where(eq(clients.id, strategy.clientId));
 
   return { success: true };
+}
+
+// ─── Send magic link to client ────────────────────────────────────────────────
+
+export async function sendStrategyMagicLink(clientId: string, email: string) {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+
+  const res = await fetch(`${appUrl}/api/portal/auth`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ clientId, email }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error ?? "Failed to send magic link");
+  }
+
+  const data = await res.json();
+
+  if (data.stubUrl) {
+    // Dev mode: return stub URL for testing
+    return { sent: false, stubUrl: data.stubUrl as string };
+  }
+
+  return { sent: true };
+}
+
+// ─── Generate portal test link for dashboard ──────────────────────────────────
+
+export async function generatePortalTestLink(clientId: string): Promise<{ url: string }> {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const url = `${appUrl}/api/portal/test-token?clientId=${encodeURIComponent(clientId)}`;
+  return { url };
 }

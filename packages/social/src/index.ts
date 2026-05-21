@@ -38,5 +38,8 @@ export * from "./connectors/pinterest";
 export * from "./connectors/reddit";
 export * from "./connectors/discord";
 
+// ─── Inbox helpers ────────────────────────────────────────────────────────────
+export * from "./inbox";
+
 // ─── Ayrshare connectors ──────────────────────────────────────────────────────
 export * from "./connectors/ayrshare/index";

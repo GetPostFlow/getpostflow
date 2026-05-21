@@ -15,6 +15,7 @@
     "lint": "turbo run lint",
     "test": "turbo run test",
     "seed:demo-client": "dotenv -e apps/web/.env.local -- npx ts-node --project tsconfig.scripts.json scripts/seed-demo-client.ts",
+    "seed:demo-clients": "dotenv -e apps/web/.env.local -- npx ts-node --project tsconfig.scripts.json scripts/seed-demo-clients.ts",
     "seed:demo-content": "dotenv -e apps/web/.env.local -- npx ts-node --project tsconfig.scripts.json scripts/seed-demo-content.ts",
     "seed:demo-inbox": "dotenv -e apps/web/.env.local -- npx ts-node --project tsconfig.scripts.json scripts/seed-demo-inbox.ts",
     "seed:demo-analytics": "dotenv -e apps/web/.env.local -- npx ts-node --project tsconfig.scripts.json scripts/seed-demo-analytics.ts",
@@ -33,6 +34,7 @@
     "vitest": "^4.1.7"
   },
   "dependencies": {
-    "dotenv": "^17.4.2"
+    "dotenv": "^17.4.2",
+    "dotenv-cli": "^11.0.0"
   }
 }

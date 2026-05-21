@@ -7,6 +7,7 @@ import { Badge } from "@getpostflow/ui/badge";
 import { Card, CardContent, CardHeader } from "@getpostflow/ui/card";
 import { EmptyState } from "@getpostflow/ui/empty-state";
 import Link from "next/link";
+import { ClientPortalButton } from "./_client-portal-button";
 
 const STATUS_LABELS: Record<string, string> = {
   draft: "Draft",
@@ -32,7 +33,8 @@ const STATUS_VARIANT: Record<string, "default" | "success" | "warning" | "danger
 
 export default async function ClientsPage() {
   const { userId, orgId } = await auth();
-  if (!userId || !orgId) redirect("/sign-in");
+  if (!userId) redirect("/sign-in");
+  if (!orgId) redirect("/dashboard");
 
   const db = createDb(process.env.DATABASE_URL!);
 
@@ -109,21 +111,23 @@ export default async function ClientsPage() {
       ) : (
         <div className="flex flex-col gap-3">
           {clientList.map((client) => (
-            <Link
+            <div
               key={client.id}
-              href={`/dashboard/clients/${client.id}`}
               className="flex items-center justify-between rounded-2xl border p-4 transition hover:border-[var(--brand-primary)]/30 hover:shadow-sm"
               style={{ borderColor: "var(--border-soft)", background: "var(--surface)" }}
             >
-              <div className="flex items-center gap-4">
+              <Link
+                href={`/dashboard/clients/${client.id}`}
+                className="flex items-center gap-4 flex-1 min-w-0"
+              >
                 {/* Avatar */}
                 <div
-                  className="flex h-10 w-10 items-center justify-center rounded-xl text-sm font-bold text-white"
+                  className="flex h-10 w-10 items-center justify-center rounded-xl text-sm font-bold text-white flex-shrink-0"
                   style={{ background: "var(--brand-primary)" }}
                 >
                   {client.name.charAt(0).toUpperCase()}
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="font-medium text-sm" style={{ color: "var(--text-primary)" }}>
                     {client.name}
                   </p>
@@ -131,16 +135,19 @@ export default async function ClientsPage() {
                     {client.industry ?? "No industry"} · {client.primaryLocale.toUpperCase()}
                   </p>
                 </div>
-              </div>
-              <div className="flex items-center gap-3">
+              </Link>
+              <div className="flex items-center gap-3 flex-shrink-0">
+                <ClientPortalButton clientId={client.id} />
                 <Badge variant={STATUS_VARIANT[client.status] ?? "muted"}>
                   {STATUS_LABELS[client.status] ?? client.status}
                 </Badge>
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" style={{ color: "var(--text-muted)" }}>
-                  <path d="M6 3l5 5-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-                </svg>
+                <Link href={`/dashboard/clients/${client.id}`} aria-label="Open client workspace">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" style={{ color: "var(--text-muted)" }}>
+                    <path d="M6 3l5 5-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                  </svg>
+                </Link>
               </div>
-            </Link>
+            </div>
           ))}
         </div>
       )}

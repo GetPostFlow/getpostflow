@@ -152,6 +152,67 @@ Tailwind tokens are in `packages/config/tailwind/index.js`.
 
 ---
 
+## Marketing pages
+
+All marketing pages are statically renderable (no auth required):
+
+| Route | Page |
+|---|---|
+| `/` | Landing |
+| `/pricing` | Pricing |
+| `/features` | Features detail |
+| `/how-it-works` | Step-by-step process |
+| `/case-studies` | Case study grid |
+| `/faq` | FAQ (with JSON-LD FAQPage schema) |
+| `/blog` | Blog index |
+| `/blog/:slug` | Blog post |
+| `/contact` | Contact form |
+| `/about` | About page |
+| `/careers` | Job listings |
+| `/legal` | Legal index |
+| `/legal/cookie-policy` | Cookie policy |
+| `/legal/gdpr` | GDPR compliance |
+| `/privacy` | Privacy policy |
+| `/terms` | Terms of service |
+
+---
+
+## SEO
+
+- `app/sitemap.ts` — Next.js App Router sitemap (auto-generates `/sitemap.xml`)
+- `public/robots.txt` — crawl rules, disallows `/dashboard/*` and `/api/*`
+- `lib/marketing/json-ld.tsx` — structured data components (Organization, Service, FAQPage, BreadcrumbList, BlogPosting)
+- Global `Metadata` with `metadataBase`, Open Graph, Twitter card, and canonical URL in `app/layout.tsx`
+- Security headers (CSP, HSTS, X-Frame-Options, X-Content-Type-Options) via `next.config.ts`
+
+---
+
+## Multi-language (v1)
+
+Five locales supported: **EN** (default), **ES**, **FR**, **PT**, **DE**.
+
+- Message files: `messages/{locale}.json`
+- Configuration: `i18n.ts` (next-intl)
+- Locale switcher in footer (`lib/marketing/locale-switcher.tsx`)
+- Preference stored in `NEXT_LOCALE` cookie
+
+---
+
+## Rate limiting
+
+API routes (`/api/*`) are rate-limited via Upstash Redis sliding window (60 req/min per IP).
+Webhooks (`/api/clerk/webhook`, `/api/stripe/webhook`, `/api/webhooks/*`) are excluded.
+Configure with `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` in `.env.local`.
+
+---
+
+## Health check
+
+`GET /api/health` returns a JSON status for all subsystems: DB, Redis, Ayrshare, OpenAI, and Stripe.
+Returns HTTP 200 if all checks pass, 503 if any check fails.
+
+---
+
 ## CI
 
 GitHub Actions runs on every PR and push to `main`:

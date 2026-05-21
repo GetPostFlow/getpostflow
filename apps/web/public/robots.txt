@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+
+# Disallow dashboard/app routes
+Disallow: /dashboard/
+Disallow: /sign-in/
+Disallow: /sign-up/
+Disallow: /portal/
+Disallow: /api/
+Disallow: /design-system/
+
+# Sitemap
+Sitemap: https://getpostflow.com/sitemap.xml

@@ -40,8 +40,10 @@ module.exports = {
         "brand-danger": "#A35D5D",
       },
       fontFamily: {
-        display: ["Plus Jakarta Sans", "Satoshi", "sans-serif"],
-        body: ["Inter", "sans-serif"],
+        display: ["Poppins", "sans-serif"],
+        heading: ["Poppins", "sans-serif"],
+        subtitle: ["Montserrat", "sans-serif"],
+        body: ["DM Sans", "sans-serif"],
       },
     },
   },

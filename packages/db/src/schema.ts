@@ -74,6 +74,34 @@ export const messageDirectionEnum = pgEnum("message_direction", [
   "outbound"
 ]);
 
+export const conversationStatusEnum = pgEnum("conversation_status", [
+  "open",
+  "pending",
+  "resolved",
+  "spam"
+]);
+
+export const conversationPriorityEnum = pgEnum("conversation_priority", [
+  "low",
+  "normal",
+  "high",
+  "urgent"
+]);
+
+export const messageSentimentEnum = pgEnum("message_sentiment", [
+  "positive",
+  "neutral",
+  "negative",
+  "urgent"
+]);
+
+export const messageStatusEnum = pgEnum("message_status", [
+  "unread",
+  "read",
+  "replied",
+  "escalated"
+]);
+
 export const clientStatusEnum = pgEnum("client_status", [
   "draft",
   "intake_pending",
@@ -219,23 +247,60 @@ export const strategies = pgTable("strategies", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
 });
 
+// ── Phase 3 enums ─────────────────────────────────────────────────────────────
+
+export const contentTypeEnum = pgEnum("content_type", [
+  "post",
+  "carousel",
+  "reel",
+  "story",
+  "thread",
+  "ad",
+  "video_script",
+]);
+
+export const assetTypeEnum = pgEnum("asset_type", [
+  "image",
+  "video",
+  "document",
+  "audio",
+]);
+
 // ── Content ───────────────────────────────────────────────────────────────────
 
 export const contentItems = pgTable("content_items", {
   id: uuid("id").defaultRandom().primaryKey(),
   clientId: uuid("client_id").notNull(),
+  orgId: uuid("org_id"),
   title: varchar("title", { length: 255 }).notNull(),
+  platform: varchar("platform", { length: 64 }),
+  contentType: contentTypeEnum("content_type").notNull().default("post"),
   locale: varchar("locale", { length: 8 }).notNull().default("en"),
   status: contentStatusEnum("status").notNull().default("draft"),
   scheduledFor: timestamp("scheduled_for", { withTimezone: true }),
+  /** Set once the content is published across at least one platform */
+  publishedAt: timestamp("published_at", { withTimezone: true }),
+  publishedUrl: varchar("published_url", { length: 1024 }),
+  /** Comma-separated platform keys this item should be published to */
+  targetPlatforms: jsonb("target_platforms").notNull().default([]),
+  /** Stores the full ContentDraft payload from the AI engine */
+  draftPayload: jsonb("draft_payload").notNull().default({}),
+  /** History tags: ai-generated, edited-by-internal, edited-by-client, client-published, etc. */
+  historyTags: jsonb("history_tags").notNull().default([]),
+  createdByUserId: uuid("created_by_user_id"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
 });
 
 export const contentVersions = pgTable("content_versions", {
   id: uuid("id").defaultRandom().primaryKey(),
   contentItemId: uuid("content_item_id").notNull(),
+  versionInt: integer("version_int").notNull().default(1),
   body: text("body").notNull(),
   platformVariants: jsonb("platform_variants").notNull().default({}),
+  /** Full ContentDraft snapshot at this version */
+  draftPayload: jsonb("draft_payload").notNull().default({}),
+  changeSummary: varchar("change_summary", { length: 512 }),
   createdByUserId: uuid("created_by_user_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
 });
@@ -257,21 +322,64 @@ export const approvals = pgTable("approvals", {
 export const conversations = pgTable("conversations", {
   id: uuid("id").defaultRandom().primaryKey(),
   clientId: uuid("client_id").notNull(),
-  socialAccountId: uuid("social_account_id").notNull(),
-  platformThreadId: varchar("platform_thread_id", { length: 255 }).notNull(),
-  detectedLocale: varchar("detected_locale", { length: 8 }).default("en"),
-  sentimentSummary: varchar("sentiment_summary", { length: 64 }),
+  platform: varchar("platform", { length: 64 }).notNull(),
+  platformConversationId: varchar("platform_conversation_id", { length: 255 }).notNull(),
+  participantHandle: varchar("participant_handle", { length: 255 }),
+  status: conversationStatusEnum("status").notNull().default("open"),
+  priority: conversationPriorityEnum("priority").notNull().default("normal"),
   assignedToUserId: uuid("assigned_to_user_id"),
+  detectedLocale: varchar("detected_locale", { length: 8 }).default("en"),
+  sentimentSummary: messageSentimentEnum("sentiment_summary"),
+  lastMessageAt: timestamp("last_message_at", { withTimezone: true }).defaultNow().notNull(),
+  /** social_account_id FK kept for analytics join */
+  socialAccountId: uuid("social_account_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
 });
 
 export const messages = pgTable("messages", {
   id: uuid("id").defaultRandom().primaryKey(),
   conversationId: uuid("conversation_id").notNull(),
-  direction: messageDirectionEnum("direction").notNull(),
-  body: text("body").notNull(),
-  detectedLocale: varchar("detected_locale", { length: 8 }).default("en"),
   platformMessageId: varchar("platform_message_id", { length: 255 }),
+  direction: messageDirectionEnum("direction").notNull(),
+  content: text("content").notNull(),
+  senderHandle: varchar("sender_handle", { length: 255 }),
+  sentiment: messageSentimentEnum("sentiment").default("neutral"),
+  aiSuggestedReply: text("ai_suggested_reply"),
+  aiConfidence: integer("ai_confidence"),
+  status: messageStatusEnum("status").notNull().default("unread"),
+  detectedLocale: varchar("detected_locale", { length: 8 }).default("en"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+});
+
+export const inboxAssignments = pgTable("inbox_assignments", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  conversationId: uuid("conversation_id").notNull(),
+  userId: uuid("user_id").notNull(),
+  assignedAt: timestamp("assigned_at", { withTimezone: true }).defaultNow().notNull(),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true })
+});
+
+// ── Community management ──────────────────────────────────────────────────────
+
+export const engagementTemplates = pgTable("engagement_templates", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  orgId: uuid("org_id").notNull(),
+  clientId: uuid("client_id"),
+  title: varchar("title", { length: 255 }).notNull(),
+  content: text("content").notNull(),
+  tags: jsonb("tags").notNull().default([]),
+  useCount: integer("use_count").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+});
+
+export const moderationRules = pgTable("moderation_rules", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  orgId: uuid("org_id").notNull(),
+  clientId: uuid("client_id"),
+  name: varchar("name", { length: 255 }).notNull(),
+  blockedKeywords: jsonb("blocked_keywords").notNull().default([]),
+  autoHide: boolean("auto_hide").notNull().default(false),
+  isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
 });
 
@@ -301,9 +409,38 @@ export const assets = pgTable("assets", {
   id: uuid("id").defaultRandom().primaryKey(),
   orgId: uuid("org_id").notNull(),
   clientId: uuid("client_id"),
+  type: assetTypeEnum("type").notNull().default("image"),
   kind: varchar("kind", { length: 64 }).notNull(),
+  filename: varchar("filename", { length: 512 }),
+  mimeType: varchar("mime_type", { length: 128 }),
+  sizeBytes: integer("size_bytes"),
   storageKey: varchar("storage_key", { length: 512 }).notNull(),
+  publicUrl: varchar("public_url", { length: 1024 }),
+  /** { width, height, duration, aspectRatio } */
+  dimensions: jsonb("dimensions").notNull().default({}),
+  /** AI-generated content tags for search */
+  aiTags: jsonb("ai_tags").notNull().default([]),
+  /** User-applied tags */
+  tags: jsonb("tags").notNull().default([]),
   metadata: jsonb("metadata").notNull().default({}),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+});
+
+// ── Published content ─────────────────────────────────────────────────────────
+
+export const publishedContent = pgTable("published_content", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  contentItemId: uuid("content_item_id").notNull(),
+  clientId: uuid("client_id").notNull(),
+  platform: varchar("platform", { length: 64 }).notNull(),
+  /** Ayrshare post id (or direct platform post id once migrated) */
+  platformPostId: varchar("platform_post_id", { length: 255 }),
+  platformPostUrl: varchar("platform_post_url", { length: 1024 }),
+  publishedAt: timestamp("published_at", { withTimezone: true }),
+  /** Whether this was directly published by the client (not the team) */
+  isClientPublished: boolean("is_client_published").notNull().default(false),
+  /** Raw Ayrshare or platform API response */
+  rawResponse: jsonb("raw_response").notNull().default({}),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
 });
 
@@ -311,12 +448,26 @@ export const assets = pgTable("assets", {
 
 export const analyticsEvents = pgTable("analytics_events", {
   id: uuid("id").defaultRandom().primaryKey(),
+  contentItemId: uuid("content_item_id"),
   clientId: uuid("client_id").notNull(),
-  domain: varchar("domain", { length: 64 }).notNull(),
-  metric: varchar("metric", { length: 128 }).notNull(),
+  platform: varchar("platform", { length: 64 }).notNull(),
+  /** Metric type: impressions | reach | engagement | clicks | shares | comments | saves | video_views | watch_time */
+  metricType: varchar("metric_type", { length: 64 }).notNull(),
   value: integer("value").notNull().default(0),
-  metadata: jsonb("metadata").notNull().default({}),
-  capturedAt: timestamp("captured_at", { withTimezone: true }).defaultNow().notNull()
+  recordedAt: timestamp("recorded_at", { withTimezone: true }).defaultNow().notNull(),
+  /** Raw metric payload from Ayrshare */
+  rawPayload: jsonb("raw_payload").notNull().default({})
+});
+
+/** Per-client daily aggregate — used for dashboard charts */
+export const analyticsAggregates = pgTable("analytics_aggregates", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  clientId: uuid("client_id").notNull(),
+  date: varchar("date", { length: 16 }).notNull(), // YYYY-MM-DD
+  platform: varchar("platform", { length: 64 }).notNull(),
+  /** JSON object: { impressions, reach, engagement, clicks, shares, comments, saves, video_views, watch_time } */
+  metrics: jsonb("metrics").notNull().default({}),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull()
 });
 
 // ── AI learning ───────────────────────────────────────────────────────────────
@@ -417,4 +568,118 @@ export const notifications = pgTable("notifications", {
   read: boolean("read").notNull().default(false),
   metadata: jsonb("metadata").notNull().default({}),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+});
+
+// ── Phase 6: Learning Loop ─────────────────────────────────────────────────────
+
+/**
+ * Stores one learning record per published content item.
+ * Tracks AI prediction vs actual engagement and the generated insight.
+ */
+export const aiLearningInsights = pgTable("ai_learning_insights", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  clientId: uuid("client_id").notNull(),
+  contentItemId: uuid("content_item_id").notNull(),
+  platform: varchar("platform", { length: 64 }).notNull(),
+  contentType: varchar("content_type", { length: 64 }).notNull(),
+  /** 0–1 score predicted by scoreContent() at publish time */
+  prediction: integer("prediction").notNull().default(0), // stored as integer 0-100
+  /** 0–1 normalised actual engagement score */
+  actual: integer("actual").notNull().default(0), // stored as integer 0-100
+  /** actual − prediction (can be negative), stored as integer -100..100 */
+  delta: integer("delta").notNull().default(0),
+  insightText: text("insight_text").notNull(),
+  recommendations: jsonb("recommendations").notNull().default([]),
+  appliedAt: timestamp("applied_at", { withTimezone: true }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+});
+
+// ── Phase 6: Video analytics ───────────────────────────────────────────────────
+
+export const videoAnalytics = pgTable("video_analytics", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  contentItemId: uuid("content_item_id").notNull(),
+  clientId: uuid("client_id").notNull(),
+  platform: varchar("platform", { length: 64 }).notNull(),
+  views: integer("views").notNull().default(0),
+  watchTimeSeconds: integer("watch_time_seconds").notNull().default(0),
+  durationSeconds: integer("duration_seconds").notNull().default(0),
+  completionRate: integer("completion_rate").notNull().default(0), // 0-100
+  dropOffPoints: jsonb("drop_off_points").notNull().default([]),
+  abTestVariant: varchar("ab_test_variant", { length: 4 }), // "A" | "B"
+  recordedAt: timestamp("recorded_at", { withTimezone: true }).defaultNow().notNull()
+});
+
+// ── Phase 6: Reports ──────────────────────────────────────────────────────────
+
+export const reportStatusEnum = pgEnum("report_status", [
+  "pending",
+  "generating",
+  "ready",
+  "sent",
+  "failed"
+]);
+
+export const reportFrequencyEnum = pgEnum("report_frequency", [
+  "weekly",
+  "biweekly",
+  "monthly"
+]);
+
+/**
+ * Stores generated PDF reports per client.
+ * pdf_url points to an R2/S3 stored file.
+ */
+export const reports = pgTable("reports", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  clientId: uuid("client_id").notNull(),
+  orgId: uuid("org_id").notNull(),
+  type: varchar("type", { length: 64 }).notNull().default("monthly"), // monthly | ondemand
+  periodStart: varchar("period_start", { length: 16 }).notNull(), // YYYY-MM-DD
+  periodEnd: varchar("period_end", { length: 16 }).notNull(),
+  status: reportStatusEnum("status").notNull().default("pending"),
+  pdfUrl: varchar("pdf_url", { length: 1024 }),
+  summaryPayload: jsonb("summary_payload").notNull().default({}),
+  sentAt: timestamp("sent_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// White-label (Phase 7 — data model only, feature flag OFF in v1)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * BrandingProfile: per-org white-label customization.
+ * Feature flag `white_label_enabled` is FALSE for all plans in v1.
+ */
+export const brandingProfiles = pgTable("branding_profiles", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  orgId: uuid("org_id").notNull().unique(),
+  logoUrl: varchar("logo_url", { length: 2048 }),
+  primaryColor: varchar("primary_color", { length: 9 }),
+  secondaryColor: varchar("secondary_color", { length: 9 }),
+  fontHeading: varchar("font_heading", { length: 128 }),
+  fontBody: varchar("font_body", { length: 128 }),
+  customDomain: varchar("custom_domain", { length: 255 }),
+  isActive: boolean("is_active").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+/**
+ * Per-client report schedule configuration.
+ */
+export const reportSchedules = pgTable("report_schedules", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  clientId: uuid("client_id").notNull(),
+  orgId: uuid("org_id").notNull(),
+  frequency: reportFrequencyEnum("frequency").notNull().default("monthly"),
+  /** Day of month (1-28) for monthly/biweekly; day of week (0=Sun) for weekly */
+  dayValue: integer("day_value").notNull().default(1),
+  recipientEmails: jsonb("recipient_emails").notNull().default([]),
+  isActive: boolean("is_active").notNull().default(true),
+  lastSentAt: timestamp("last_sent_at", { withTimezone: true }),
+  nextSendAt: timestamp("next_send_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull()
 });

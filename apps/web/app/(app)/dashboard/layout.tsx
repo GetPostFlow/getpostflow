@@ -21,13 +21,15 @@ export default async function DashboardLayout({
   }
 
   const { auth } = await import("@clerk/nextjs/server");
-  const { userId } = await auth();
+  const { userId, orgId } = await auth();
   if (!userId) redirect("/sign-in");
+
+  let clientList: { id: string; name: string }[] = [];
 
   // Check if the user has an org membership; if not, show the no-org screen
   // instead of letting them see a broken dashboard.
   try {
-    const { createDb, users, orgMemberships } = await import("@getpostflow/db");
+    const { createDb, users, orgMemberships, clients, orgs } = await import("@getpostflow/db");
     const { eq } = await import("drizzle-orm");
     const db = createDb();
 
@@ -49,11 +51,27 @@ export default async function DashboardLayout({
         return <NoOrgScreen />;
       }
     }
+
+    // Fetch client list for the client switcher
+    if (orgId) {
+      const [org] = await db
+        .select({ id: orgs.id })
+        .from(orgs)
+        .where(eq(orgs.clerkOrgId, orgId))
+        .limit(1);
+
+      if (org) {
+        clientList = await db
+          .select({ id: clients.id, name: clients.name })
+          .from(clients)
+          .where(eq(clients.orgId, org.id));
+      }
+    }
   } catch {
     // DB check failed — still render the shell; page-level guards will catch missing data
   }
 
-  return <DashboardShell>{children}</DashboardShell>;
+  return <DashboardShell clients={clientList}>{children}</DashboardShell>;
 }
 
 function NoOrgScreen() {

@@ -1,0 +1,31 @@
+{
+  "nav": {
+    "features": "Fonctionnalités",
+    "howItWorks": "Comment ça marche",
+    "pricing": "Tarifs",
+    "blog": "Blog",
+    "signIn": "Se connecter",
+    "startTrial": "Essai gratuit"
+  },
+  "hero": {
+    "eyebrow": "Gestion des réseaux sociaux à votre place",
+    "headline": "Vos réseaux sociaux, gérés.",
+    "body": "GetPostFlow est un service de gestion des réseaux sociaux clé en main. De vrais stratèges planifient votre contenu, créent vos publications, gèrent votre communauté et vous envoient des rapports mensuels.",
+    "ctaPrimary": "Commencer l'essai de 14 jours",
+    "ctaSecondary": "Voir comment ça marche",
+    "noCard": "Sans carte bancaire pour l'essai. Annulez à tout moment."
+  },
+  "footer": {
+    "tagline": "Gestion des réseaux sociaux pour les entreprises en croissance.",
+    "copyright": "© 2025 GetPostFlow. Tous droits réservés.",
+    "product": "Produit",
+    "company": "Entreprise",
+    "legal": "Mentions légales"
+  },
+  "common": {
+    "learnMore": "En savoir plus",
+    "getStarted": "Commencer",
+    "contactUs": "Nous contacter",
+    "readMore": "Lire la suite"
+  }
+}

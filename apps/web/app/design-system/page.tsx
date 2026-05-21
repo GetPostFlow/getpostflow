@@ -43,12 +43,12 @@ export default function DesignSystemPage() {
         <div>
           <h1
             className="text-4xl font-bold"
-            style={{ fontFamily: "var(--font-display, 'Plus Jakarta Sans'), sans-serif", color: "var(--brand-primary)" }}
+            style={{ fontFamily: "var(--font-heading, 'Poppins'), sans-serif", color: "var(--brand-primary)" }}
           >
             GetPostFlow Design System
           </h1>
-          <p className="mt-2 text-sm" style={{ color: "var(--text-secondary)" }}>
-            All Phase 1 components in light context. Palette: canvas #F6F2EA · brand #2F5D62 · secondary #8C6A43
+          <p className="mt-2 text-sm" style={{ color: "var(--text-primary)" }}>
+            All Phase 1 components in light context. Palette: canvas #F6F2EA · brand #2F5D62 · secondary #8C6A43 · Fonts: Poppins (headings) · Montserrat (subtitles) · DM Sans (body)
           </p>
         </div>
 
@@ -56,15 +56,21 @@ export default function DesignSystemPage() {
         <Section title="Typography">
           <p
             className="text-5xl font-bold"
-            style={{ fontFamily: "var(--font-display, 'Plus Jakarta Sans'), sans-serif" }}
+            style={{ fontFamily: "var(--font-heading, 'Poppins'), sans-serif" }}
           >
-            Display — Plus Jakarta Sans
+            Display: Poppins
           </p>
           <p className="text-3xl font-semibold">Heading Large</p>
           <p className="text-xl font-semibold">Heading Medium</p>
-          <p className="text-base">Body text — Inter. Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+          <p
+            className="text-lg font-medium subtitle"
+            style={{ fontFamily: "var(--font-subtitle, 'Montserrat'), sans-serif" }}
+          >
+            Subtitle text (Montserrat)
+          </p>
+          <p className="text-base">Body text (DM Sans). Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
           <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Small / secondary text</p>
-          <p className="text-xs" style={{ color: "var(--text-muted)" }}>Caption / muted text</p>
+          <p className="text-xs" style={{ color: "var(--text-secondary)" }}>Caption / muted text</p>
         </Section>
 
         {/* Palette */}
@@ -89,7 +95,7 @@ export default function DesignSystemPage() {
                   className="h-12 w-12 rounded-xl border"
                   style={{ background: c.val, borderColor: "var(--border-soft)" }}
                 />
-                <span className="text-[10px] text-center" style={{ color: "var(--text-muted)" }}>
+                <span className="text-[10px] text-center" style={{ color: "var(--text-secondary)" }}>
                   {c.label}
                 </span>
               </div>

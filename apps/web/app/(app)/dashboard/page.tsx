@@ -13,7 +13,7 @@ export default async function DashboardPage() {
       <div>
         <h2
           className="text-2xl font-bold"
-          style={{ fontFamily: "var(--font-display, 'Plus Jakarta Sans'), sans-serif", color: "var(--text-primary)" }}
+          style={{ fontFamily: "var(--font-heading, 'Poppins'), sans-serif", color: "var(--text-primary)" }}
         >
           Welcome back, {firstName}
         </h2>

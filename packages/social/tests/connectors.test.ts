@@ -433,3 +433,75 @@ describe("Ayrshare client – bearer auth header", () => {
     expect(headers["Profile-Key"]).toBe("pk-profile-abc");
   });
 });
+
+// ── Phase 5: Inbox helpers ────────────────────────────────────────────────────
+
+import {
+  classifySentiment,
+  generateSuggestedReply,
+  shouldEscalate,
+} from "../src/inbox.js";
+
+describe("classifySentiment", () => {
+  it("detects urgent keywords", () => {
+    const { sentiment } = classifySentiment("This is URGENT please help me now!");
+    expect(sentiment).toBe("urgent");
+  });
+
+  it("detects negative sentiment", () => {
+    const { sentiment } = classifySentiment("Terrible service, worst experience ever. I hate this.");
+    expect(sentiment).toBe("negative");
+  });
+
+  it("detects positive sentiment", () => {
+    const { sentiment, confidence } = classifySentiment("Love this product, it's amazing and fantastic!");
+    expect(sentiment).toBe("positive");
+    expect(confidence).toBeGreaterThan(60);
+  });
+
+  it("returns neutral for unclassified text", () => {
+    const { sentiment } = classifySentiment("What are your business hours?");
+    expect(sentiment).toBe("neutral");
+  });
+});
+
+describe("generateSuggestedReply", () => {
+  it("returns Reddit policy message for Reddit platform", () => {
+    const reply = generateSuggestedReply("Great post!", "positive", "reddit");
+    expect(reply).toContain("Manual response required");
+  });
+
+  it("returns escalation reply for negative sentiment", () => {
+    const reply = generateSuggestedReply("This is terrible", "negative", "facebook", "Acme");
+    expect(reply).toContain("Acme");
+    expect(reply.length).toBeGreaterThan(20);
+  });
+
+  it("returns positive reply for positive sentiment", () => {
+    const reply = generateSuggestedReply("Love it!", "positive", "instagram");
+    expect(reply).toContain("Thank you");
+  });
+
+  it("returns hours reply when hours keywords present", () => {
+    const reply = generateSuggestedReply("What are your opening hours?", "neutral", "instagram");
+    expect(reply).toContain("hours");
+  });
+});
+
+describe("shouldEscalate", () => {
+  it("escalates negative sentiment", () => {
+    expect(shouldEscalate("negative")).toBe(true);
+  });
+
+  it("escalates urgent sentiment", () => {
+    expect(shouldEscalate("urgent")).toBe(true);
+  });
+
+  it("does not escalate positive sentiment", () => {
+    expect(shouldEscalate("positive")).toBe(false);
+  });
+
+  it("does not escalate neutral sentiment", () => {
+    expect(shouldEscalate("neutral")).toBe(false);
+  });
+});

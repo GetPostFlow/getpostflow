@@ -4,9 +4,26 @@
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "Bundler",
-    "outDir": "./dist",
-    "rootDir": "./src"
+    "baseUrl": "../..",
+    "noEmit": true,
+    "skipLibCheck": true,
+    "paths": {
+      "@getpostflow/ui": ["packages/ui/src/index.ts"],
+      "@getpostflow/ui/*": ["packages/ui/src/*"],
+      "@getpostflow/shared": ["packages/shared/src/index.ts"],
+      "@getpostflow/billing": ["packages/billing/src/index.ts"],
+      "@getpostflow/permissions": ["packages/permissions/src/index.ts"],
+      "@getpostflow/ai": ["packages/ai/src/index.ts"],
+      "@getpostflow/social": ["packages/social/src/index.ts"],
+      "@getpostflow/auth": ["packages/auth/src/index.ts"],
+      "@getpostflow/approvals": ["packages/approvals/src/index.ts"],
+      "@getpostflow/analytics": ["packages/analytics/src/index.ts"],
+      "@getpostflow/reporting": ["packages/reporting/src/index.ts"],
+      "@getpostflow/db": ["packages/db/src/index.ts"],
+      "drizzle-orm": ["node_modules/.pnpm/drizzle-orm@0.44.7_@neondatabase+serverless@1.1.0/node_modules/drizzle-orm"],
+      "drizzle-orm/*": ["node_modules/.pnpm/drizzle-orm@0.44.7_@neondatabase+serverless@1.1.0/node_modules/drizzle-orm/*"]
+    }
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "tests/**/*.ts"],
   "exclude": ["node_modules", "dist"]
 }

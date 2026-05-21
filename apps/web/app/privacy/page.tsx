@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — GetPostFlow",
+  title: "Privacy Policy | GetPostFlow",
   description: "GetPostFlow privacy policy.",
 };
 
