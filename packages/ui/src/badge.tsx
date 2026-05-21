@@ -1,7 +1,7 @@
 import type { HTMLAttributes } from "react";
 import { clsx } from "clsx";
 
-type BadgeVariant = "default" | "success" | "warning" | "danger" | "outline";
+type BadgeVariant = "default" | "success" | "warning" | "danger" | "outline" | "muted";
 
 type BadgeProps = HTMLAttributes<HTMLSpanElement> & {
   variant?: BadgeVariant;
@@ -13,6 +13,7 @@ const VARIANT_STYLES: Record<BadgeVariant, string> = {
   warning: "bg-[var(--brand-warning)]/15 text-[var(--brand-warning)]",
   danger: "bg-[var(--brand-danger)]/15 text-[var(--brand-danger)]",
   outline: "border border-[var(--border-soft)] text-[var(--text-secondary)]",
+  muted: "bg-[var(--subtle)] text-[var(--text-muted)]",
 };
 
 export function Badge({ variant = "default", className, children, ...props }: BadgeProps) {

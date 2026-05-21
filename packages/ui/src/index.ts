@@ -14,3 +14,5 @@ export { TopBar } from "./top-bar";
 export { EmptyState } from "./empty-state";
 export { Skeleton } from "./skeleton";
 export { StatTile } from "./stat-tile";
+export { ApprovalThread, CommentInput, DecisionBadge } from "./approval-thread";
+export type { ApprovalThreadProps, CommentInputProps } from "./approval-thread";

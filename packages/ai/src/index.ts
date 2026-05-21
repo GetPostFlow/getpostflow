@@ -71,3 +71,7 @@ export * from "./providers/replicate";
 export * from "./providers/runway";
 export * from "./providers/veo";
 export * from "./providers/sora";
+
+// ─── Phase 2 additions ────────────────────────────────────────────────────────
+
+export * from "./brand-strategy";
