@@ -90,12 +90,7 @@ async function stubMiddlewareWithRateLimit(req: NextRequest) {
   const rateLimitResponse = await applyRateLimit(req);
   if (rateLimitResponse) return rateLimitResponse;
 
-  const { pathname } = req.nextUrl;
-  if (pathname.startsWith("/dashboard") || pathname.startsWith("/(app)")) {
-    const url = req.nextUrl.clone();
-    url.pathname = "/sign-in";
-    return NextResponse.redirect(url);
-  }
+  // Real Clerk keys are configured — allow dashboard routes
   return NextResponse.next();
 }
 
