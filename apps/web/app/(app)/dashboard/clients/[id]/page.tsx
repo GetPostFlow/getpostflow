@@ -260,17 +260,28 @@ export default async function ClientWorkspacePage({ params, searchParams }: Prop
 
 // ─── Tab Components ───────────────────────────────────────────────────────────
 
+interface BrandVoiceData {
+  tone?: string;
+  audience?: string;
+  pillars?: string[];
+  package?: string;
+  doSay?: string[];
+  dontSay?: string[];
+  examplePost?: string;
+}
+
 function OverviewTab({
   client,
   latestIntake,
   latestStrategy,
   recentContent,
 }: {
-  client: { id: string; name: string; status: string; industry: string | null; primaryLocale: string; primaryContactName: string | null; primaryContactEmail: string | null; slug: string; createdAt: Date };
+  client: { id: string; name: string; status: string; industry: string | null; primaryLocale: string; primaryContactName: string | null; primaryContactEmail: string | null; slug: string; createdAt: Date; permissions: unknown };
   latestIntake: { isDraft: boolean } | undefined;
   latestStrategy: { status: string; versionInt: number } | undefined;
   recentContent: { id: string; status: string; platform: string | null; title: string; scheduledFor: Date | null; clientId: string }[];
 }) {
+  const brandVoice = ((client.permissions as Record<string, unknown>)?.brandVoice ?? null) as BrandVoiceData | null;
   const hasIntakeSubmitted = !!latestIntake && !latestIntake.isDraft;
 
   const steps = [
@@ -426,6 +437,84 @@ function OverviewTab({
           </dl>
         </CardContent>
       </Card>
+
+      {/* Brand Voice — shown when populated */}
+      {brandVoice && (brandVoice.tone || brandVoice.audience || (brandVoice.pillars?.length ?? 0) > 0) && (
+        <Card>
+          <CardHeader>
+            <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Brand Voice</h3>
+          </CardHeader>
+          <CardContent>
+            <dl className="flex flex-col gap-3 text-xs">
+              {brandVoice.tone && (
+                <div>
+                  <dt className="mb-0.5" style={{ color: "var(--text-muted)" }}>Tone</dt>
+                  <dd className="font-medium capitalize" style={{ color: "var(--text-primary)" }}>{brandVoice.tone}</dd>
+                </div>
+              )}
+              {brandVoice.audience && (
+                <div>
+                  <dt className="mb-0.5" style={{ color: "var(--text-muted)" }}>Target Audience</dt>
+                  <dd className="font-medium" style={{ color: "var(--text-primary)" }}>{brandVoice.audience}</dd>
+                </div>
+              )}
+              {(brandVoice.pillars?.length ?? 0) > 0 && (
+                <div>
+                  <dt className="mb-1" style={{ color: "var(--text-muted)" }}>Content Pillars</dt>
+                  <dd className="flex flex-wrap gap-1">
+                    {brandVoice.pillars!.map((p) => (
+                      <span
+                        key={p}
+                        className="inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium capitalize"
+                        style={{ background: "var(--subtle)", color: "var(--text-secondary)" }}
+                      >
+                        {p}
+                      </span>
+                    ))}
+                  </dd>
+                </div>
+              )}
+              {brandVoice.package && (
+                <div>
+                  <dt className="mb-0.5" style={{ color: "var(--text-muted)" }}>Package</dt>
+                  <dd className="font-medium" style={{ color: "var(--text-primary)" }}>{brandVoice.package}</dd>
+                </div>
+              )}
+              {(brandVoice.doSay?.length ?? 0) > 0 && (
+                <div>
+                  <dt className="mb-1" style={{ color: "var(--text-muted)" }}>Do Say</dt>
+                  <dd className="flex flex-col gap-0.5">
+                    {brandVoice.doSay!.slice(0, 3).map((s, i) => (
+                      <span key={i} className="text-xs" style={{ color: "var(--text-primary)" }}>· {s}</span>
+                    ))}
+                  </dd>
+                </div>
+              )}
+              {(brandVoice.dontSay?.length ?? 0) > 0 && (
+                <div>
+                  <dt className="mb-1" style={{ color: "var(--text-muted)" }}>Don't Say</dt>
+                  <dd className="flex flex-col gap-0.5">
+                    {brandVoice.dontSay!.slice(0, 2).map((s, i) => (
+                      <span key={i} className="text-xs" style={{ color: "var(--text-primary)" }}>· {s}</span>
+                    ))}
+                  </dd>
+                </div>
+              )}
+              {brandVoice.examplePost && (
+                <div>
+                  <dt className="mb-1" style={{ color: "var(--text-muted)" }}>Example Post</dt>
+                  <dd
+                    className="rounded-xl p-3 text-xs leading-relaxed"
+                    style={{ background: "var(--subtle)", color: "var(--text-secondary)" }}
+                  >
+                    {brandVoice.examplePost}
+                  </dd>
+                </div>
+              )}
+            </dl>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

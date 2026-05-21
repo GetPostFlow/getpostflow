@@ -411,22 +411,34 @@ export default function StrategyReviewClient({
           className="rounded-2xl border p-4"
           style={{ borderColor: "var(--border-soft)", background: "var(--surface)" }}
         >
-          <div className="flex items-center gap-2 mb-4">
-            <h2 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>AI Draft</h2>
-            <span
-              className="rounded-full px-2 py-0.5 text-[10px] font-medium"
-              style={{ background: "var(--subtle)", color: "var(--text-muted)" }}
-            >
-              Read-only
-            </span>
-            {Boolean((strategy.aiMetadata as Record<string, unknown>)?.stubMode) && (
+          <div className="flex flex-col gap-2 mb-4">
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>AI Draft</h2>
               <span
                 className="rounded-full px-2 py-0.5 text-[10px] font-medium"
-                style={{ background: "var(--brand-warning)/20", color: "var(--brand-warning)" }}
+                style={{ background: "var(--subtle)", color: "var(--text-muted)" }}
               >
-                Stub Mode
+                Read-only
               </span>
-            )}
+              {Boolean((strategy.aiMetadata as Record<string, unknown>)?.stubMode) && (
+                <span
+                  className="rounded-full px-2 py-0.5 text-[10px] font-medium"
+                  style={{ background: "var(--brand-warning)/20", color: "var(--brand-warning)" }}
+                >
+                  Stub Mode
+                </span>
+              )}
+            </div>
+            {/* Provenance label */}
+            <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
+              Generated from intake on{" "}
+              {(strategy.aiMetadata as Record<string, unknown>)?.intakeSubmittedAt
+                ? new Date((strategy.aiMetadata as Record<string, unknown>).intakeSubmittedAt as string).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+                : new Date(strategy.id ? 0 : 0).toLocaleDateString()}
+              {(strategy.aiMetadata as Record<string, unknown>)?.package
+                ? ` using ${(strategy.aiMetadata as Record<string, unknown>).package} package`
+                : ""}
+            </p>
           </div>
           <DraftView
             draft={strategy.draftPayload as unknown as BrandStrategyDraft}

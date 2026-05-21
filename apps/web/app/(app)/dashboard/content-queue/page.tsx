@@ -181,21 +181,6 @@ export default async function ContentQueuePage({ searchParams }: Props) {
       <div className="flex flex-wrap gap-2 items-center">
         <span className="text-xs" style={{ color: "var(--text-muted)" }}>Filter:</span>
 
-        {/* Client filter */}
-        <select
-          className="rounded-xl border px-3 py-1.5 text-xs"
-          style={{ borderColor: "var(--border-soft)", background: "var(--surface)", color: "var(--text-primary)" }}
-          value={clientFilter ?? ""}
-          onChange={() => {}}
-          disabled
-          aria-label="Filter by client (use links)"
-        >
-          <option value="">All clients</option>
-          {clientList.map((c) => (
-            <option key={c.id} value={c.id}>{c.name}</option>
-          ))}
-        </select>
-
         {/* Client links */}
         <div className="flex gap-1 flex-wrap">
           <Link
