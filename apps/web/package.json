@@ -16,6 +16,7 @@
     "@getpostflow/db": "workspace:*",
     "@getpostflow/billing": "workspace:*",
     "@getpostflow/permissions": "workspace:*",
+    "@getpostflow/reporting": "workspace:*",
     "@getpostflow/shared": "workspace:*",
     "@getpostflow/social": "workspace:*",
     "@getpostflow/ui": "workspace:*",

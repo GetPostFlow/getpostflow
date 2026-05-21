@@ -72,6 +72,9 @@ importers:
       '@getpostflow/permissions':
         specifier: workspace:*
         version: link:../../packages/permissions
+      '@getpostflow/reporting':
+        specifier: workspace:*
+        version: link:../../packages/reporting
       '@getpostflow/shared':
         specifier: workspace:*
         version: link:../../packages/shared
