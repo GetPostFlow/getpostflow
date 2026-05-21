@@ -82,12 +82,13 @@ type OrgMembershipData = {
 // ── DB sync helpers ───────────────────────────────────────────────────────────
 
 async function syncUserCreated(data: UserCreatedData) {
-  const { createDb, users } = await import("@getpostflow/db");
-  const { eq } = await import("drizzle-orm");
+  const { createDb, users, orgs, orgMemberships, orgSubscriptions } = await import("@getpostflow/db");
+  const { eq, count } = await import("drizzle-orm");
   const db = createDb();
   const primaryEmail = data.email_addresses[0]?.email_address ?? "";
   const fullName = [data.first_name, data.last_name].filter(Boolean).join(" ") || null;
 
+  // Upsert the user record
   await db
     .insert(users)
     .values({ clerkUserId: data.id, email: primaryEmail, fullName, avatarUrl: data.image_url })
@@ -96,7 +97,67 @@ async function syncUserCreated(data: UserCreatedData) {
       set: { email: primaryEmail, fullName, avatarUrl: data.image_url },
     });
 
-  void eq; // imported for potential future use
+  // Fetch the newly-created (or existing) user row
+  const [user] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.clerkUserId, data.id))
+    .limit(1);
+
+  if (!user) return;
+
+  // Check whether any org already exists
+  const [{ value: orgCount }] = await db.select({ value: count() }).from(orgs);
+  const isFirstUser = orgCount === 0;
+
+  if (isFirstUser) {
+    // Create a default org for the very first sign-up
+    const defaultOrgName = fullName ? `${fullName}'s Agency` : (primaryEmail.split("@")[0] ?? "My Agency");
+    const clerkOrgId = `auto-${data.id}`;
+
+    const [org] = await db
+      .insert(orgs)
+      .values({ clerkOrgId, name: defaultOrgName })
+      .returning();
+
+    if (org) {
+      // Assign org_admin role to the first user
+      await db
+        .insert(orgMemberships)
+        .values({ orgId: org.id, userId: user.id, role: "org_admin" })
+        .onConflictDoNothing();
+
+      // Create a 14-day trial subscription
+      const trialEndsAt = new Date();
+      trialEndsAt.setDate(trialEndsAt.getDate() + 14);
+      await db
+        .insert(orgSubscriptions)
+        .values({ orgId: org.id, planCode: "starter", status: "trialing", billingInterval: "monthly", trialEndsAt })
+        .onConflictDoNothing();
+
+      console.log(`[clerk-webhook] First sign-up: created org "${defaultOrgName}" and assigned org_admin to ${primaryEmail}`);
+    }
+  } else {
+    // Not the first user — check if they are already a member of any org; if not, join the first org as strategist
+    const [existingMembership] = await db
+      .select({ id: orgMemberships.id })
+      .from(orgMemberships)
+      .where(eq(orgMemberships.userId, user.id))
+      .limit(1);
+
+    if (!existingMembership) {
+      const [firstOrg] = await db.select({ id: orgs.id }).from(orgs).limit(1);
+      if (firstOrg) {
+        await db
+          .insert(orgMemberships)
+          .values({ orgId: firstOrg.id, userId: user.id, role: "strategist" })
+          .onConflictDoNothing();
+        console.log(`[clerk-webhook] New user ${primaryEmail} assigned strategist role in default org`);
+      }
+    }
+  }
+
+  void eq;
 }
 
 async function syncUserUpdated(data: UserUpdatedData) {

@@ -2,6 +2,7 @@
   "name": "getpostflow",
   "private": true,
   "version": "0.1.0",
+  "license": "UNLICENSED",
   "packageManager": "pnpm@9.15.4",
   "workspaces": [
     "apps/*",
@@ -12,7 +13,12 @@
     "build": "turbo run build",
     "typecheck": "turbo run typecheck",
     "lint": "turbo run lint",
-    "test": "turbo run test"
+    "test": "turbo run test",
+    "seed:demo-client": "dotenv -e apps/web/.env.local -- npx ts-node --project tsconfig.scripts.json scripts/seed-demo-client.ts",
+    "seed:demo-content": "dotenv -e apps/web/.env.local -- npx ts-node --project tsconfig.scripts.json scripts/seed-demo-content.ts",
+    "seed:demo-inbox": "dotenv -e apps/web/.env.local -- npx ts-node --project tsconfig.scripts.json scripts/seed-demo-inbox.ts",
+    "seed:demo-analytics": "dotenv -e apps/web/.env.local -- npx ts-node --project tsconfig.scripts.json scripts/seed-demo-analytics.ts",
+    "grant-admin": "dotenv -e apps/web/.env.local -- npx ts-node --project tsconfig.scripts.json scripts/grant-admin.ts"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.11",
@@ -25,5 +31,8 @@
     "turbo": "^2.0.14",
     "typescript": "^5.8.3",
     "vitest": "^4.1.7"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2"
   }
 }
