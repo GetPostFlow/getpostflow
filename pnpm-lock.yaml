@@ -66,6 +66,9 @@ importers:
       '@getpostflow/billing':
         specifier: workspace:*
         version: link:../../packages/billing
+      '@getpostflow/db':
+        specifier: workspace:*
+        version: link:../../packages/db
       '@getpostflow/permissions':
         specifier: workspace:*
         version: link:../../packages/permissions

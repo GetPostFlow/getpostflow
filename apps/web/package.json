@@ -13,6 +13,7 @@
     "@getpostflow/analytics": "workspace:*",
     "@getpostflow/approvals": "workspace:*",
     "@getpostflow/auth": "workspace:*",
+    "@getpostflow/db": "workspace:*",
     "@getpostflow/billing": "workspace:*",
     "@getpostflow/permissions": "workspace:*",
     "@getpostflow/shared": "workspace:*",
