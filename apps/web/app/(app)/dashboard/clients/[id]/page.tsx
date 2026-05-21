@@ -50,20 +50,26 @@ const STRATEGY_STATUS_VARIANT: Record<string, "default" | "success" | "warning" 
 
 const CONTENT_STATUS_LABELS: Record<string, string> = {
   draft: "Draft",
-  in_review: "In Review",
+  pending_review: "Pending Review",
   approved: "Approved",
   scheduled: "Scheduled",
+  publishing: "Publishing",
   published: "Published",
   failed: "Failed",
+  client_published: "Client Published",
+  archived: "Archived",
 };
 
 const CONTENT_STATUS_VARIANT: Record<string, "default" | "success" | "warning" | "danger" | "muted"> = {
   draft: "muted",
-  in_review: "warning",
+  pending_review: "warning",
   approved: "default",
   scheduled: "default",
+  publishing: "default",
   published: "success",
   failed: "danger",
+  client_published: "success",
+  archived: "muted",
 };
 
 interface Props {
@@ -621,7 +627,7 @@ function ContentTab({
 }) {
   const counts = {
     draft: recentContent.filter((c) => c.status === "draft").length,
-    in_review: recentContent.filter((c) => c.status === "in_review").length,
+    pending_review: recentContent.filter((c) => c.status === "pending_review").length,
     approved: recentContent.filter((c) => c.status === "approved").length,
     scheduled: recentContent.filter((c) => c.status === "scheduled").length,
     published: recentContent.filter((c) => c.status === "published").length,
@@ -707,7 +713,7 @@ function ContentTab({
                       className="h-2 w-2 rounded-full flex-shrink-0"
                       style={{ background: item.platform === "instagram" ? "#E1306C" : item.platform === "facebook" ? "#1877F2" : item.platform === "linkedin" ? "#0A66C2" : "var(--brand-primary)" }}
                     />
-                    <span className="text-xs capitalize" style={{ color: "var(--text-muted)" }}>{item.platform}</span>
+                    <span className="text-xs capitalize" style={{ color: "var(--text-muted)" }}>{item.platform ?? "post"}</span>
                     <span className="text-xs font-medium truncate" style={{ color: "var(--text-primary)" }}>
                       {item.title ?? "Untitled"}
                     </span>

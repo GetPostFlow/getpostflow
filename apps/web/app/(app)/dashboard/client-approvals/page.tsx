@@ -57,8 +57,8 @@ export default async function ClientApprovalsPage() {
         .limit(100)
     : [];
 
-  // Content pending client review (in_review status = sent to client for approval)
-  const pendingApproval = allContent.filter((c) => c.status === "in_review");
+  // Content pending client review (pending_review status = sent to client for approval)
+  const pendingApproval = allContent.filter((c) => c.status === "pending_review");
   const approved = allContent.filter((c) => c.status === "approved");
   const published = allContent.filter((c) => c.status === "published");
 
@@ -129,14 +129,14 @@ export default async function ClientApprovalsPage() {
                   <div className="flex items-center gap-3 min-w-0">
                     <span
                       className="h-2 w-2 rounded-full flex-shrink-0"
-                      style={{ background: PLATFORM_COLOR[item.platform] ?? "var(--brand-primary)" }}
+                      style={{ background: PLATFORM_COLOR[item.platform ?? ""] ?? "var(--brand-primary)" }}
                     />
                     <div className="min-w-0">
                       <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>
                         {item.title ?? "Untitled"}
                       </p>
                       <p className="text-xs mt-0.5 capitalize" style={{ color: "var(--text-muted)" }}>
-                        {item.platform} · {item.clientName}
+                        {item.platform ?? "post"} · {item.clientName}
                         {item.scheduledFor && ` · Scheduled ${new Date(item.scheduledFor).toLocaleDateString()}`}
                       </p>
                     </div>
@@ -180,14 +180,14 @@ export default async function ClientApprovalsPage() {
                   <div className="flex items-center gap-3 min-w-0">
                     <span
                       className="h-2 w-2 rounded-full flex-shrink-0"
-                      style={{ background: PLATFORM_COLOR[item.platform] ?? "var(--brand-primary)" }}
+                      style={{ background: PLATFORM_COLOR[item.platform ?? ""] ?? "var(--brand-primary)" }}
                     />
                     <div className="min-w-0">
                       <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>
                         {item.title ?? "Untitled"}
                       </p>
                       <p className="text-xs mt-0.5 capitalize" style={{ color: "var(--text-muted)" }}>
-                        {item.platform} · {item.clientName}
+                        {item.platform ?? "post"} · {item.clientName}
                       </p>
                     </div>
                   </div>

@@ -195,13 +195,14 @@ async function main() {
   console.log("🌱 Seeding demo content: Acme Bakery...\n");
 
   // 1. Find org + client
+  const orgClerkId = process.env.SEED_ORG_CLERK_ID ?? "demo-org-clerk-id";
   const [org] = await db
     .select()
     .from(orgs)
-    .where(eq(orgs.clerkOrgId, "demo-org-clerk-id"))
+    .where(eq(orgs.clerkOrgId, orgClerkId))
     .limit(1);
   if (!org) {
-    console.error("ERROR: Demo org not found. Run `pnpm seed:demo-client` first.");
+    console.error(`ERROR: Org with clerk_org_id "${orgClerkId}" not found. Run \`pnpm seed:demo-client\` first.`);
     process.exit(1);
   }
 

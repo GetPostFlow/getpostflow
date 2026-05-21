@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { clsx } from "clsx";
 import type { ReactNode } from "react";
 
@@ -37,7 +38,7 @@ export function NavRail({ items, activeId, orgName, footer }: NavRailProps) {
         {items.map((item) => {
           const isActive = item.id === activeId;
           return (
-            <a
+            <Link
               key={item.id}
               href={item.href}
               className={clsx(
@@ -65,7 +66,7 @@ export function NavRail({ items, activeId, orgName, footer }: NavRailProps) {
                   {item.badge}
                 </span>
               )}
-            </a>
+            </Link>
           );
         })}
       </div>

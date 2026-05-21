@@ -19,7 +19,8 @@
     "seed:demo-content": "dotenv -e apps/web/.env.local -- npx ts-node --project tsconfig.scripts.json scripts/seed-demo-content.ts",
     "seed:demo-inbox": "dotenv -e apps/web/.env.local -- npx ts-node --project tsconfig.scripts.json scripts/seed-demo-inbox.ts",
     "seed:demo-analytics": "dotenv -e apps/web/.env.local -- npx ts-node --project tsconfig.scripts.json scripts/seed-demo-analytics.ts",
-    "grant-admin": "dotenv -e apps/web/.env.local -- npx ts-node --project tsconfig.scripts.json scripts/grant-admin.ts"
+    "grant-admin": "dotenv -e apps/web/.env.local -- npx ts-node --project tsconfig.scripts.json scripts/grant-admin.ts",
+    "fix-org-subscription": "dotenv -e apps/web/.env.local -- npx ts-node --project tsconfig.scripts.json scripts/fix-org-subscription.ts"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.11",

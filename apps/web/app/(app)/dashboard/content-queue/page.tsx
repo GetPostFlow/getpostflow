@@ -27,20 +27,26 @@ const PLATFORM_COLOR: Record<string, string> = {
 
 const STATUS_LABELS: Record<string, string> = {
   draft: "Draft",
-  in_review: "In Review",
+  pending_review: "Pending Review",
   approved: "Approved",
   scheduled: "Scheduled",
+  publishing: "Publishing",
   published: "Published",
   failed: "Failed",
+  client_published: "Client Published",
+  archived: "Archived",
 };
 
 const STATUS_VARIANT: Record<string, "default" | "success" | "warning" | "danger" | "muted"> = {
   draft: "muted",
-  in_review: "warning",
+  pending_review: "warning",
   approved: "default",
   scheduled: "default",
+  publishing: "default",
   published: "success",
   failed: "danger",
+  client_published: "success",
+  archived: "muted",
 };
 
 interface Props {
@@ -98,7 +104,7 @@ export default async function ContentQueuePage({ searchParams }: Props) {
 
   const counts = {
     draft: allContent.filter((c) => c.status === "draft").length,
-    in_review: allContent.filter((c) => c.status === "in_review").length,
+    in_review: allContent.filter((c) => c.status === "pending_review").length,
     approved: allContent.filter((c) => c.status === "approved").length,
     scheduled: allContent.filter((c) => c.status === "scheduled").length,
     published: allContent.filter((c) => c.status === "published").length,
@@ -272,10 +278,10 @@ export default async function ContentQueuePage({ searchParams }: Props) {
                   <div className="flex items-center gap-3 min-w-0">
                     <span
                       className="h-2 w-2 rounded-full flex-shrink-0"
-                      style={{ background: PLATFORM_COLOR[item.platform] ?? "var(--brand-primary)" }}
+                      style={{ background: PLATFORM_COLOR[item.platform ?? ""] ?? "var(--brand-primary)" }}
                     />
                     <span className="text-xs font-medium capitalize flex-shrink-0 w-20" style={{ color: "var(--text-muted)" }}>
-                      {item.platform}
+                      {item.platform ?? "post"}
                     </span>
                     <span className="text-xs font-medium truncate" style={{ color: "var(--text-primary)" }}>
                       {item.title ?? "Untitled"}

@@ -23,6 +23,7 @@
     "./top-bar": "./src/top-bar.tsx"
   },
   "peerDependencies": {
+    "next": ">=14.0.0",
     "react": "^19.0.0"
   },
   "dependencies": {

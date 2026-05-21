@@ -38,8 +38,10 @@ if (!DATABASE_URL) {
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
-const DEMO_ORG_NAME = "Demo Agency";
-const DEMO_ORG_CLERK_ID = "demo-org-clerk-id";
+const DEMO_ORG_NAME = process.env.SEED_ORG_NAME ?? "Demo Agency";
+// Allow targeting a real Clerk org via SEED_ORG_CLERK_ID so seed data lands
+// in the correct org in production/staging. Falls back to the fixture value.
+const DEMO_ORG_CLERK_ID = process.env.SEED_ORG_CLERK_ID ?? "demo-org-clerk-id";
 const DEMO_CLIENT_NAME = "Acme Bakery";
 const DEMO_CLIENT_SLUG = "acme-bakery";
 const DEMO_CLIENT_EMAIL = "owner@acmebakery.com";

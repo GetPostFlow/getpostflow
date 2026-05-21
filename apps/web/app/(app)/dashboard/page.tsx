@@ -1,11 +1,39 @@
+import { auth } from "@clerk/nextjs/server";
 import { currentUser } from "@clerk/nextjs/server";
 import { StatTile } from "@getpostflow/ui/stat-tile";
 import { Card, CardContent, CardHeader } from "@getpostflow/ui/card";
 import { Badge } from "@getpostflow/ui/badge";
+import { createDb } from "@getpostflow/db";
+import { orgs, orgSubscriptions } from "@getpostflow/db";
+import { eq } from "drizzle-orm";
 
 export default async function DashboardPage() {
-  const user = await currentUser();
+  const [user, { orgId }] = await Promise.all([currentUser(), auth()]);
   const firstName = user?.firstName ?? "there";
+
+  let isTrialing = false;
+
+  if (orgId) {
+    try {
+      const db = createDb(process.env.DATABASE_URL!);
+      const [org] = await db
+        .select({ id: orgs.id })
+        .from(orgs)
+        .where(eq(orgs.clerkOrgId, orgId))
+        .limit(1);
+
+      if (org) {
+        const [sub] = await db
+          .select({ status: orgSubscriptions.status })
+          .from(orgSubscriptions)
+          .where(eq(orgSubscriptions.orgId, org.id))
+          .limit(1);
+        isTrialing = sub?.status === "trialing";
+      }
+    } catch {
+      // DB unavailable — don't show the banner
+    }
+  }
 
   return (
     <div className="flex flex-col gap-8">
@@ -22,26 +50,28 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      {/* Trial notice */}
-      <div
-        className="flex items-center gap-3 rounded-2xl border px-5 py-4"
-        style={{ borderColor: "rgba(47,93,98,0.2)", backgroundColor: "rgba(47,93,98,0.05)" }}
-      >
-        <span className="text-lg">🎉</span>
-        <div>
-          <p className="text-sm font-semibold" style={{ color: "var(--brand-primary)" }}>
-            Your 14-day free trial has started
-          </p>
-          <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>
-            No card required. Upgrade anytime from{" "}
-            <a href="/dashboard/billing" className="underline underline-offset-2" style={{ color: "var(--brand-primary)" }}>
-              Billing
-            </a>
-            .
-          </p>
+      {/* Trial notice — only shown when subscription is actively trialing */}
+      {isTrialing && (
+        <div
+          className="flex items-center gap-3 rounded-2xl border px-5 py-4"
+          style={{ borderColor: "rgba(47,93,98,0.2)", backgroundColor: "rgba(47,93,98,0.05)" }}
+        >
+          <span className="text-lg">🎉</span>
+          <div>
+            <p className="text-sm font-semibold" style={{ color: "var(--brand-primary)" }}>
+              Your 14-day free trial has started
+            </p>
+            <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>
+              No card required. Upgrade anytime from{" "}
+              <a href="/dashboard/billing" className="underline underline-offset-2" style={{ color: "var(--brand-primary)" }}>
+                Billing
+              </a>
+              .
+            </p>
+          </div>
+          <Badge variant="success" className="ml-auto">Starter trial</Badge>
         </div>
-        <Badge variant="success" className="ml-auto">Starter trial</Badge>
-      </div>
+      )}
 
       {/* Stat tiles */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -77,11 +107,13 @@ export default async function DashboardPage() {
           }
         />
         <StatTile
-          label="AI Credits Used"
-          value="0 / 120"
+          label="Active Clients"
+          value="0"
+          change="Add your first client"
+          changePositive={true}
           icon={
             <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M8 1l2 5h5l-4 3 1.5 5L8 11l-4.5 3L5 9 1 6h5L8 1z" />
+              <path d="M5.5 4a2.5 2.5 0 1 0 5 0 2.5 2.5 0 0 0-5 0zm-3.5 9c0-3.31 2.69-6 6-6s6 2.69 6 6H2z" />
             </svg>
           }
         />

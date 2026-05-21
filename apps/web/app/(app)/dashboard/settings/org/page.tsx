@@ -141,6 +141,50 @@ export default function OrgSettingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Plan info */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <h3 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>
+              Plan &amp; Billing
+            </h3>
+            <a
+              href="/dashboard/billing"
+              className="text-xs font-medium transition hover:opacity-70"
+              style={{ color: "var(--brand-primary)" }}
+            >
+              Manage plan →
+            </a>
+          </div>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3 text-sm" style={{ color: "var(--text-secondary)" }}>
+          <div className="flex items-center justify-between">
+            <span>Current plan</span>
+            <span
+              className="rounded-lg px-2.5 py-1 text-xs font-semibold"
+              style={{ background: "rgba(47,93,98,0.1)", color: "var(--brand-primary)" }}
+            >
+              Growth (Trial)
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span>Connected social accounts</span>
+            <span>Up to 10</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Client seats</span>
+            <span>Up to 5</span>
+          </div>
+          <div className="flex justify-between">
+            <span>AI text credits / mo</span>
+            <span>500</span>
+          </div>
+          <p className="text-xs pt-1" style={{ color: "var(--text-muted)" }}>
+            Full billing management and plan upgrades are available via the Billing page.
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -324,20 +324,6 @@ export default function DashboardShell({
       <NavRail
         items={NAV_ITEMS}
         activeId={activeId}
-        footer={
-          <div className="flex flex-col gap-2 px-1 pb-2">
-            <a
-              href="/dashboard/billing"
-              className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium transition hover:bg-[var(--subtle)]"
-              style={{ color: pathname.startsWith("/dashboard/billing") ? "var(--brand-primary)" : "var(--text-muted)" }}
-            >
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-                <path d="M3 4a1 1 0 0 0-1 1v1h12V5a1 1 0 0 0-1-1H3zm-1 4v4a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V8H2zm3 2h6v1H5v-1z" />
-              </svg>
-              Billing
-            </a>
-          </div>
-        }
       />
 
       {/* Main content area */}
