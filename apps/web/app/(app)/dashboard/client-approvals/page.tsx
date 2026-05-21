@@ -1,4 +1,5 @@
 
+import { auth } from "@clerk/nextjs/server";
 import { createDb } from "@getpostflow/db";
 import { clients, orgs, contentItems } from "@getpostflow/db";
 import { eq, desc } from "drizzle-orm";
@@ -25,14 +26,17 @@ const PLATFORM_COLOR: Record<string, string> = {
 };
 
 export default async function ClientApprovalsPage() {
-    
+  const { orgId } = await auth();
+
   const db = createDb(process.env.DATABASE_URL!);
 
-  const [org] = await db
-    .select({ id: orgs.id })
-    .from(orgs)
-    .where(eq(orgs.clerkOrgId, orgId))
-    .limit(1);
+  const [org] = orgId
+    ? await db
+        .select({ id: orgs.id })
+        .from(orgs)
+        .where(eq(orgs.clerkOrgId, orgId))
+        .limit(1)
+    : [];
 
   const allContent = org
     ? await db

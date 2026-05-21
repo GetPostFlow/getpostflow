@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Card, CardHeader, CardContent, CardFooter } from "@getpostflow/ui";
 
 export default function ClientsPage() {
-  const [clients, setClients] = useState([]);
+  const [clients, setClients] = useState<{ id: string; slug: string; name: string; status: string }[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

@@ -1,4 +1,5 @@
 
+import { auth } from "@clerk/nextjs/server";
 import { createDb } from "@getpostflow/db";
 import { clients, orgs, clientIntakeSubmissions } from "@getpostflow/db";
 import { eq, desc } from "drizzle-orm";
@@ -13,14 +14,17 @@ export const metadata: Metadata = {
 };
 
 export default async function IntakeReviewsPage() {
-    
+  const { orgId } = await auth();
+
   const db = createDb(process.env.DATABASE_URL!);
 
-  const [org] = await db
-    .select({ id: orgs.id })
-    .from(orgs)
-    .where(eq(orgs.clerkOrgId, orgId))
-    .limit(1);
+  const [org] = orgId
+    ? await db
+        .select({ id: orgs.id })
+        .from(orgs)
+        .where(eq(orgs.clerkOrgId, orgId))
+        .limit(1)
+    : [];
 
   const intakes = org
     ? await db

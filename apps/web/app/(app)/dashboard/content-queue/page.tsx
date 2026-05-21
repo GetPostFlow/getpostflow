@@ -1,4 +1,5 @@
 
+import { auth } from "@clerk/nextjs/server";
 import { createDb } from "@getpostflow/db";
 import { clients, orgs, contentItems } from "@getpostflow/db";
 import { eq, desc } from "drizzle-orm";
@@ -54,15 +55,17 @@ interface Props {
 
 export default async function ContentQueuePage({ searchParams }: Props) {
   const { client: clientFilter, status: statusFilter, platform: platformFilter } = await searchParams;
+  const { orgId } = await auth();
 
-    
   const db = createDb(process.env.DATABASE_URL!);
 
-  const [org] = await db
-    .select({ id: orgs.id })
-    .from(orgs)
-    .where(eq(orgs.clerkOrgId, orgId))
-    .limit(1);
+  const [org] = orgId
+    ? await db
+        .select({ id: orgs.id })
+        .from(orgs)
+        .where(eq(orgs.clerkOrgId, orgId))
+        .limit(1)
+    : [];
 
   const clientList = org
     ? await db.select({ id: clients.id, name: clients.name }).from(clients).where(eq(clients.orgId, org.id))
