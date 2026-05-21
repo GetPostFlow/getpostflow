@@ -99,7 +99,12 @@ async function clerkMiddlewareWithRateLimit(auth: ClerkMiddlewareAuth, req: Next
   if (rateLimitResponse) return rateLimitResponse;
 
   if (!isPublicRoute(req)) {
-    await auth.protect();
+    const { userId } = await auth();
+    if (!userId) {
+      const signInUrl = new URL("/sign-in", req.url);
+      signInUrl.searchParams.set("redirect_url", req.nextUrl.pathname);
+      return NextResponse.redirect(signInUrl);
+    }
   }
 }
 
