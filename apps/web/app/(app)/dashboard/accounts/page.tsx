@@ -46,6 +46,26 @@ export default function AccountsPage() {
         </Badge>
       </div>
 
+      {/* Definition callout */}
+      <div
+        className="rounded-2xl border px-4 py-3"
+        style={{ borderColor: "rgba(47, 93, 98, 0.3)", background: "rgba(47, 93, 98, 0.05)" }}
+      >
+        <div className="flex items-start gap-3">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" className="mt-0.5 flex-shrink-0" style={{ color: "var(--brand-primary)" }}>
+            <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm-.75 3.5h1.5V9h-1.5V4.5zm0 5.5h1.5v1.5h-1.5V10z" />
+          </svg>
+          <div>
+            <p className="text-xs font-semibold" style={{ color: "var(--brand-primary)" }}>What are Connected Accounts?</p>
+            <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>
+              These are the <strong>social media accounts belonging to your clients</strong> — not your team&apos;s accounts.
+              You connect them so you can schedule posts, reply to messages, and publish content <em>on behalf of your clients</em>.
+              Each client has their own set of connected accounts. Go to a Client Workspace → Accounts tab to manage per-client connections.
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Reddit policy callout */}
       <div
         className="rounded-2xl border px-4 py-3 text-sm"
