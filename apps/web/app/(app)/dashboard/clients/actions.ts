@@ -146,7 +146,7 @@ export async function submitIntake(clientId: string, payload: Record<string, unk
 
   // Generate AI brand strategy
   try {
-    const draft = await generateBrandStrategy(payload as Parameters<typeof generateBrandStrategy>[0]);
+    const draft = await generateBrandStrategy(payload as unknown as Parameters<typeof generateBrandStrategy>[0]);
 
     // Store draft
     await database.insert(clientBrandStrategies).values({
