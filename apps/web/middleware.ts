@@ -22,7 +22,6 @@ const isPublicRoute = createRouteMatcher([
   "/api/clerk/webhook(.*)",
   "/api/stripe/webhook(.*)",
   "/api/health(.*)",
-  "/api/debug/render-test(.*)",
   "/portal(.*)",
   "/api/portal(.*)",
 ]);
