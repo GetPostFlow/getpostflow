@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { requireOrgAuth } from "@/lib/auth-org";
 import { createDb } from "@getpostflow/db";
 import { clients, clientIntakeSubmissions } from "@getpostflow/db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, or } from "drizzle-orm";
 import IntakeForm from "./_intake-form";
 
 interface Props {
@@ -15,10 +15,18 @@ export default async function IntakePage({ params }: Props) {
 
   const db = createDb(process.env.DATABASE_URL!);
 
+  const UUID_RE =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
   const [client] = await db
     .select()
     .from(clients)
-    .where(and(eq(clients.id, id), eq(clients.orgId, org.id)))
+    .where(
+      and(
+        UUID_RE.test(id) ? eq(clients.id, id) : eq(clients.slug, id),
+        eq(clients.orgId, org.id)
+      )
+    )
     .limit(1);
 
   if (!client) notFound();
