@@ -1,13 +1,14 @@
 
-import { auth } from "@clerk/nextjs/server";
+import { requireOrgAuth } from "@/lib/auth-org";
 import { createDb } from "@getpostflow/db";
-import { clients, orgs, contentItems } from "@getpostflow/db";
+import { clients, contentItems } from "@getpostflow/db";
 import { eq, desc } from "drizzle-orm";
 import { Badge } from "@getpostflow/ui/badge";
 import { Card, CardContent, CardHeader } from "@getpostflow/ui/card";
 import { EmptyState } from "@getpostflow/ui/empty-state";
 import Link from "next/link";
 import type { Metadata } from "next";
+import { CreateContentButton } from "./_create-content-button";
 
 export const metadata: Metadata = {
   title: "Content Queue — GetPostFlow",
@@ -55,26 +56,16 @@ interface Props {
 
 export default async function ContentQueuePage({ searchParams }: Props) {
   const { client: clientFilter, status: statusFilter, platform: platformFilter } = await searchParams;
-  const { orgId } = await auth();
-
   const db = createDb(process.env.DATABASE_URL!);
 
-  const [org] = orgId
-    ? await db
-        .select({ id: orgs.id })
-        .from(orgs)
-        .where(eq(orgs.clerkOrgId, orgId))
-        .limit(1)
-    : [];
+  const { orgRow: org } = await requireOrgAuth();
 
-  const clientList = org
-    ? await db.select({ id: clients.id, name: clients.name }).from(clients).where(eq(clients.orgId, org.id))
-    : [];
+  const clientList = await db.select({ id: clients.id, name: clients.name }).from(clients).where(eq(clients.orgId, org.id));
 
   const clientIds = clientList.map((c) => c.id);
 
   // Fetch content across all clients
-  const allContent = org && clientIds.length > 0
+  const allContent = clientIds.length > 0
     ? await db
         .select({
           id: contentItems.id,
@@ -131,29 +122,10 @@ export default async function ContentQueuePage({ searchParams }: Props) {
             All content items across all clients. Filter by client, platform, or status.
           </p>
         </div>
-        {clientFilter ? (
-          <Link
-            href={`/dashboard/clients/${clientFilter}/content/new`}
-            className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
-            style={{ background: "var(--brand-primary)" }}
-          >
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M8 2v12M2 8h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-            Create Content
-          </Link>
-        ) : (
-          <div
-            className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium opacity-50 cursor-not-allowed"
-            style={{ background: "var(--brand-primary)", color: "white" }}
-            title="Select a client first to create content"
-          >
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M8 2v12M2 8h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-            Create Content
-          </div>
-        )}
+        <CreateContentButton
+          clientFilter={clientFilter}
+          clients={clientList}
+        />
       </div>
 
       {/* Status tiles */}

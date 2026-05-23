@@ -1,8 +1,8 @@
-import { auth } from "@clerk/nextjs/server";
-import { redirect, notFound } from "next/navigation";
+import { notFound } from "next/navigation";
+import { requireOrgAuth } from "@/lib/auth-org";
 import { createDb } from "@getpostflow/db";
-import { clients, orgs, contentItems } from "@getpostflow/db";
-import { eq, and, desc, gte, lte } from "drizzle-orm";
+import { clients, contentItems } from "@getpostflow/db";
+import { eq, and, desc, gte, lte, or } from "drizzle-orm";
 import Link from "next/link";
 import { Badge } from "@getpostflow/ui/badge";
 import { Card, CardContent, CardHeader } from "@getpostflow/ui/card";
@@ -65,22 +65,24 @@ export default async function ContentCalendarPage({ params, searchParams }: Prop
   const { id } = await params;
   const { month, view = "list" } = await searchParams;
 
-  const { userId, orgId } = await auth();
-  if (!userId || !orgId) redirect("/sign-in");
+  const { orgRow: org } = await requireOrgAuth();
 
   const db = createDb(process.env.DATABASE_URL!);
 
-  const [org] = await db
-    .select({ id: orgs.id })
-    .from(orgs)
-    .where(eq(orgs.clerkOrgId, orgId))
-    .limit(1);
-  if (!org) notFound();
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const isUuid = UUID_RE.test(id);
 
   const [client] = await db
     .select()
     .from(clients)
-    .where(and(eq(clients.id, id), eq(clients.orgId, org.id)))
+    .where(
+      and(
+        isUuid
+          ? or(eq(clients.id, id), eq(clients.slug, id))
+          : eq(clients.slug, id),
+        eq(clients.orgId, org.id)
+      )
+    )
     .limit(1);
   if (!client) notFound();
 

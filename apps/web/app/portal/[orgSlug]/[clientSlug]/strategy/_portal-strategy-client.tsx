@@ -52,10 +52,11 @@ export default function ClientPortalStrategy({
   const [isRequestingChanges, setIsRequestingChanges] = useState(false);
   const [showChangesModal, setShowChangesModal] = useState(false);
   const [changesComment, setChangesComment] = useState("");
-  const [outcome, setOutcome] = useState<"approved" | "changes_requested" | null>(
-    status === "active" || status === "client_approved" ? "approved" : null
-  );
+  const [outcome, setOutcome] = useState<"approved" | "changes_requested" | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const isApproved = status === "active" || status === "client_approved";
+  const isPending = status === "client_pending" || status === "strategist_approved" || status === "strategist_pending" || status === "ai_drafting";
 
   async function handleApprove() {
     setIsApproving(true);
@@ -87,77 +88,235 @@ export default function ClientPortalStrategy({
 
   if (outcome === "approved") {
     return (
-      <div
-        style={{
-          textAlign: "center",
-          padding: "64px 24px",
-          background: "#fff",
-          borderRadius: "16px",
-          border: "1px solid #e5e7eb",
-        }}
-      >
-        <div
-          style={{
-            width: "56px",
-            height: "56px",
-            borderRadius: "50%",
-            background: "#d1fae5",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            margin: "0 auto 16px",
-            fontSize: "24px",
-          }}
-        >
-          ✓
-        </div>
-        <h2 style={{ fontSize: "20px", fontWeight: 700, color: "#1a1a1a", marginBottom: "8px" }}>
-          Strategy Approved!
-        </h2>
-        <p style={{ color: "#6b7280", fontSize: "14px", maxWidth: "400px", margin: "0 auto" }}>
-          Thank you for reviewing and approving the brand strategy for <strong>{clientName}</strong>.
-          Your agency will now begin executing the plan.
-        </p>
+      <div>
+        <ApprovedBanner clientName={clientName} />
+        <StrategyContent
+          draft={draft}
+          clientName={clientName}
+          strategyId={strategyId}
+          tokenHash={tokenHash}
+          status={status}
+          onApprove={handleApprove}
+          onRequestChanges={() => setShowChangesModal(true)}
+          isApproving={isApproving}
+          isRequestingChanges={isRequestingChanges}
+          changesComment={changesComment}
+          setChangesComment={setChangesComment}
+          showChangesModal={showChangesModal}
+          setShowChangesModal={setShowChangesModal}
+          handleRequestChanges={handleRequestChanges}
+          error={error}
+        />
       </div>
     );
   }
 
   if (outcome === "changes_requested") {
     return (
-      <div
-        style={{
-          textAlign: "center",
-          padding: "64px 24px",
-          background: "#fff",
-          borderRadius: "16px",
-          border: "1px solid #e5e7eb",
-        }}
-      >
-        <div
-          style={{
-            width: "56px",
-            height: "56px",
-            borderRadius: "50%",
-            background: "#fef3c7",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            margin: "0 auto 16px",
-            fontSize: "24px",
-          }}
-        >
-          ✎
-        </div>
-        <h2 style={{ fontSize: "20px", fontWeight: 700, color: "#1a1a1a", marginBottom: "8px" }}>
-          Changes Requested
-        </h2>
-        <p style={{ color: "#6b7280", fontSize: "14px", maxWidth: "400px", margin: "0 auto" }}>
-          Your feedback has been sent to the strategy team. They will review your comments and update the strategy.
-        </p>
+      <div>
+        <ChangesRequestedBanner />
+        <StrategyContent
+          draft={draft}
+          clientName={clientName}
+          strategyId={strategyId}
+          tokenHash={tokenHash}
+          status={status}
+          onApprove={handleApprove}
+          onRequestChanges={() => setShowChangesModal(true)}
+          isApproving={isApproving}
+          isRequestingChanges={isRequestingChanges}
+          changesComment={changesComment}
+          setChangesComment={setChangesComment}
+          showChangesModal={showChangesModal}
+          setShowChangesModal={setShowChangesModal}
+          handleRequestChanges={handleRequestChanges}
+          error={error}
+        />
       </div>
     );
   }
 
+  return (
+    <div>
+      {isApproved && <ApprovedBanner clientName={clientName} />}
+      {isPending && <DraftBanner />}
+      <StrategyContent
+        draft={draft}
+        clientName={clientName}
+        strategyId={strategyId}
+        tokenHash={tokenHash}
+        status={status}
+        onApprove={handleApprove}
+        onRequestChanges={() => setShowChangesModal(true)}
+        isApproving={isApproving}
+        isRequestingChanges={isRequestingChanges}
+        changesComment={changesComment}
+        setChangesComment={setChangesComment}
+        showChangesModal={showChangesModal}
+        setShowChangesModal={setShowChangesModal}
+        handleRequestChanges={handleRequestChanges}
+        error={error}
+      />
+    </div>
+  );
+}
+
+function ApprovedBanner({ clientName }: { clientName: string }) {
+  return (
+    <div
+      style={{
+        background: "#f0fdf4",
+        border: "1px solid #bbf7d0",
+        borderRadius: "16px",
+        padding: "16px 20px",
+        marginBottom: "20px",
+        display: "flex",
+        alignItems: "center",
+        gap: "12px",
+      }}
+    >
+      <div
+        style={{
+          width: "32px",
+          height: "32px",
+          borderRadius: "50%",
+          background: "#d1fae5",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: "16px",
+          flexShrink: 0,
+        }}
+      >
+        ✓
+      </div>
+      <div>
+        <p style={{ fontSize: "14px", fontWeight: 600, color: "#065f46", marginBottom: "2px" }}>
+          Strategy Approved
+        </p>
+        <p style={{ fontSize: "13px", color: "#16a34a" }}>
+          Thank you for reviewing and approving the brand strategy for <strong>{clientName}</strong>.
+          Your agency will now begin executing the plan.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function ChangesRequestedBanner() {
+  return (
+    <div
+      style={{
+        background: "#fef3c7",
+        border: "1px solid #fde68a",
+        borderRadius: "16px",
+        padding: "16px 20px",
+        marginBottom: "20px",
+        display: "flex",
+        alignItems: "center",
+        gap: "12px",
+      }}
+    >
+      <div
+        style={{
+          width: "32px",
+          height: "32px",
+          borderRadius: "50%",
+          background: "#fef3c7",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: "16px",
+          flexShrink: 0,
+        }}
+      >
+        ✎
+      </div>
+      <div>
+        <p style={{ fontSize: "14px", fontWeight: 600, color: "#92400e", marginBottom: "2px" }}>
+          Changes Requested
+        </p>
+        <p style={{ fontSize: "13px", color: "#d97706" }}>
+          Your feedback has been sent to the strategy team. They will review your comments and update the strategy.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function DraftBanner() {
+  return (
+    <div
+      style={{
+        background: "#eff6ff",
+        border: "1px solid #bfdbfe",
+        borderRadius: "16px",
+        padding: "16px 20px",
+        marginBottom: "20px",
+        display: "flex",
+        alignItems: "center",
+        gap: "12px",
+      }}
+    >
+      <div
+        style={{
+          width: "32px",
+          height: "32px",
+          borderRadius: "50%",
+          background: "#dbeafe",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: "16px",
+          flexShrink: 0,
+        }}
+      >
+        📝
+      </div>
+      <div>
+        <p style={{ fontSize: "14px", fontWeight: 600, color: "#1e40af", marginBottom: "2px" }}>
+          Draft Strategy
+        </p>
+        <p style={{ fontSize: "13px", color: "#3b82f6" }}>
+          This strategy is still in draft. Review the content below and request changes if needed.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+interface StrategyContentProps {
+  draft: BrandStrategyDraft;
+  clientName: string;
+  strategyId: string;
+  tokenHash: string;
+  status: string;
+  onApprove: () => void;
+  onRequestChanges: () => void;
+  isApproving: boolean;
+  isRequestingChanges: boolean;
+  changesComment: string;
+  setChangesComment: (v: string) => void;
+  showChangesModal: boolean;
+  setShowChangesModal: (v: boolean) => void;
+  handleRequestChanges: () => void;
+  error: string | null;
+}
+
+function StrategyContent({
+  draft,
+  clientName,
+  onApprove,
+  onRequestChanges,
+  isApproving,
+  isRequestingChanges,
+  changesComment,
+  setChangesComment,
+  showChangesModal,
+  setShowChangesModal,
+  handleRequestChanges,
+  error,
+}: StrategyContentProps) {
   return (
     <div>
       {/* Header */}
@@ -251,7 +410,44 @@ export default function ClientPortalStrategy({
       </Section>
 
       <Section title="Content Pillars">
-        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+          {draft.contentPillars?.map((pillar, i) => (
+            <span
+              key={i}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: "6px 12px",
+                borderRadius: "999px",
+                background: "#f3f4f6",
+                border: "1px solid #e5e7eb",
+                fontSize: "13px",
+                fontWeight: 500,
+                color: "#374151",
+              }}
+            >
+              <span
+                style={{
+                  width: "18px",
+                  height: "18px",
+                  borderRadius: "50%",
+                  background: "#6366f1",
+                  color: "white",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "10px",
+                  fontWeight: "bold",
+                }}
+              >
+                {i + 1}
+              </span>
+              {pillar.name}
+            </span>
+          ))}
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "12px" }}>
           {draft.contentPillars?.map((pillar, i) => (
             <div key={i} style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}>
               <span
@@ -288,23 +484,83 @@ export default function ClientPortalStrategy({
               <p style={{ fontSize: "11px", fontWeight: 600, textTransform: "uppercase", color: "#9ca3af", marginBottom: "8px" }}>
                 {platform}
               </p>
-              {(posts as Array<{ caption: string; hashtags: string[] }>).slice(0, 2).map((post, i) => (
-                <div
-                  key={i}
-                  style={{
-                    border: "1px solid #e5e7eb",
-                    borderRadius: "10px",
-                    padding: "12px",
-                    marginBottom: "8px",
-                    background: "#f9fafb",
-                  }}
-                >
-                  <p style={{ fontSize: "13px", color: "#374151", marginBottom: "6px", lineHeight: 1.5 }}>{post.caption}</p>
-                  <p style={{ fontSize: "12px", color: "#6366f1" }}>{post.hashtags?.join(" ")}</p>
-                </div>
-              ))}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "10px" }}>
+                {(posts as Array<{ caption: string; hashtags: string[] }>).slice(0, 5).map((post, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      border: "1px solid #e5e7eb",
+                      borderRadius: "10px",
+                      padding: "12px",
+                      background: "#f9fafb",
+                    }}
+                  >
+                    <p style={{ fontSize: "13px", color: "#374151", marginBottom: "6px", lineHeight: 1.5 }}>{post.caption}</p>
+                    <p style={{ fontSize: "12px", color: "#6366f1" }}>{post.hashtags?.join(" ")}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           ))}
+      </Section>
+
+      {draft.hashtagStrategy && (
+        <Section title="Hashtag Set">
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+            {(Array.isArray(draft.hashtagStrategy.primary) ? draft.hashtagStrategy.primary : []).map((tag: string, i: number) => (
+              <span
+                key={i}
+                style={{
+                  background: "#eff6ff",
+                  color: "#2563eb",
+                  borderRadius: "999px",
+                  padding: "4px 10px",
+                  fontSize: "12px",
+                  fontWeight: 500,
+                }}
+              >
+                #{tag}
+              </span>
+            ))}
+          </div>
+        </Section>
+      )}
+
+      {draft.postingCadenceRecommendation && (
+        <Section title="Recommended Cadence">
+          <p style={{ fontSize: "14px", color: "#374151", lineHeight: 1.6 }}>
+            {draft.postingCadenceRecommendation.summary ?? "Post consistently across platforms to maintain engagement."}
+          </p>
+        </Section>
+      )}
+
+      <Section title="Brand Voice Summary">
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+          <div>
+            <span style={{ fontSize: "11px", fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.06em" }}>Tone</span>
+            <p style={{ fontSize: "14px", color: "#374151", marginTop: "2px" }}>{draft.brandVoiceGuide.description}</p>
+          </div>
+          {draft.brandVoiceGuide.doAndDonts && (
+            <>
+              <div>
+                <span style={{ fontSize: "11px", fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.06em" }}>Do Say</span>
+                <ul style={{ margin: "4px 0 0", paddingLeft: "16px" }}>
+                  {draft.brandVoiceGuide.doAndDonts.do.map((s: string, i: number) => (
+                    <li key={i} style={{ fontSize: "13px", color: "#374151" }}>{s}</li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <span style={{ fontSize: "11px", fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.06em" }}>{"Don't Say"}</span>
+                <ul style={{ margin: "4px 0 0", paddingLeft: "16px" }}>
+                  {draft.brandVoiceGuide.doAndDonts.dont.map((s: string, i: number) => (
+                    <li key={i} style={{ fontSize: "13px", color: "#374151" }}>{s}</li>
+                  ))}
+                </ul>
+              </div>
+            </>
+          )}
+        </div>
       </Section>
 
       {/* Approval actions */}
@@ -325,7 +581,7 @@ export default function ClientPortalStrategy({
         </p>
         <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
           <button
-            onClick={handleApprove}
+            onClick={onApprove}
             disabled={isApproving}
             style={{
               background: "#10b981",
@@ -342,7 +598,7 @@ export default function ClientPortalStrategy({
             {isApproving ? "Approving…" : "Approve Strategy"}
           </button>
           <button
-            onClick={() => setShowChangesModal(true)}
+            onClick={onRequestChanges}
             style={{
               background: "transparent",
               color: "#374151",

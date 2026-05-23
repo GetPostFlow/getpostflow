@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { requireOrgAuthApi } from "@/lib/auth-org";
 import { NextRequest, NextResponse } from "next/server";
 import { createDb } from "@getpostflow/db";
 import {
@@ -6,32 +6,32 @@ import {
   contentVersions,
   clientBrandStrategies,
   clients,
-  orgs,
   auditLogs,
-  notifications,
-  orgMemberships,
 } from "@getpostflow/db";
 import { eq, and, desc } from "drizzle-orm";
-import { generateContent, scoreContent } from "@getpostflow/ai";
+import { generateContent, generateContentBatch, scoreContent } from "@getpostflow/ai";
 import type { BrandStrategyDraft } from "@getpostflow/ai";
 import type { SupportedPlatform, ContentType } from "@getpostflow/ai";
 
 /**
  * POST /api/content/generate
  *
- * Body: { clientId, platform, contentType, locale?, topic?, campaignBrief? }
+ * Body (single): { clientId, platform, contentType, locale?, topic?, campaignBrief? }
+ * Body (batch): { clientId, platforms[], contentType, locale?, topic?, campaignBrief? }
  *
- * Creates a new content item with an AI-generated draft.
+ * Creates new content item(s) with AI-generated draft(s).
  */
 export async function POST(req: NextRequest) {
-  const { userId, orgId } = await auth();
-  if (!userId || !orgId) {
+  const authResult = await requireOrgAuthApi();
+  if (!authResult) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const { userId, orgRow: org } = authResult;
 
   const body = (await req.json()) as {
     clientId: string;
-    platform: SupportedPlatform;
+    platform?: SupportedPlatform;
+    platforms?: SupportedPlatform[];
     contentType: ContentType;
     locale?: string;
     topic?: string;
@@ -39,22 +39,15 @@ export async function POST(req: NextRequest) {
     title?: string;
   };
 
-  if (!body.clientId || !body.platform || !body.contentType) {
+  const platforms = body.platforms ?? (body.platform ? [body.platform] : []);
+  if (!body.clientId || platforms.length === 0 || !body.contentType) {
     return NextResponse.json(
-      { error: "clientId, platform, and contentType are required" },
+      { error: "clientId, platform(s), and contentType are required" },
       { status: 400 }
     );
   }
 
   const db = createDb(process.env.DATABASE_URL!);
-
-  const [org] = await db
-    .select({ id: orgs.id })
-    .from(orgs)
-    .where(eq(orgs.clerkOrgId, orgId))
-    .limit(1);
-
-  if (!org) return NextResponse.json({ error: "Org not found" }, { status: 404 });
 
   const [client] = await db
     .select()
@@ -83,75 +76,96 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Generate content via AI engine
-  const draft = await generateContent(
-    brandStrategyDraft,
-    body.platform,
-    body.contentType,
-    {
-      locale: body.locale ?? client.primaryLocale,
-      topic: body.topic,
-      campaignBrief: body.campaignBrief,
-    }
-  );
+  const opts = {
+    locale: body.locale ?? client.primaryLocale,
+    topic: body.topic,
+    campaignBrief: body.campaignBrief,
+  };
 
-  const contentScore = scoreContent(draft);
-  const autoApproved = contentScore >= 0.85 && draft.moderationFlags.length === 0;
+  // Generate content for all platforms
+  const draftsByPlatform =
+    platforms.length === 1
+      ? { [platforms[0]!]: await generateContent(brandStrategyDraft, platforms[0]!, body.contentType, opts) }
+      : await generateContentBatch(brandStrategyDraft, platforms, body.contentType, opts);
 
-  const title =
-    body.title ??
-    draft.headline.slice(0, 120) ??
-    `${body.platform} ${body.contentType}`;
+  const results: Array<{
+    platform: string;
+    contentItemId: string;
+    draft: unknown;
+    contentScore: number;
+    autoApproved: boolean;
+    status: string;
+  }> = [];
 
-  // Create content item
-  const [item] = await db
-    .insert(contentItems)
-    .values({
-      clientId: client.id,
-      orgId: org.id,
-      title,
-      platform: body.platform,
-      contentType: body.contentType,
-      locale: draft.locale,
-      status: autoApproved ? "pending_review" : "draft",
+  for (const platform of platforms) {
+    const draft = draftsByPlatform[platform]!;
+    const contentScore = scoreContent(draft);
+    const autoApproved = contentScore >= 0.85 && draft.moderationFlags.length === 0;
+    const title = body.title ?? draft.headline.slice(0, 120) ?? `${platform} ${body.contentType}`;
+
+    const [item] = await db
+      .insert(contentItems)
+      .values({
+        clientId: client.id,
+        orgId: org.id,
+        title,
+        platform,
+        contentType: body.contentType,
+        locale: draft.locale,
+        status: autoApproved ? "pending_review" : "draft",
+        draftPayload: draft as unknown as Record<string, unknown>,
+        targetPlatforms: [platform],
+        historyTags: ["ai-generated"],
+        createdByUserId: undefined,
+      })
+      .returning();
+
+    await db.insert(contentVersions).values({
+      contentItemId: item!.id,
+      versionInt: 1,
+      body: draft.body,
+      platformVariants: {},
       draftPayload: draft as unknown as Record<string, unknown>,
-      historyTags: ["ai-generated"],
-      createdByUserId: undefined,
-    })
-    .returning();
+      changeSummary: "AI-generated initial draft",
+    });
 
-  // Create initial version
-  await db.insert(contentVersions).values({
-    contentItemId: item!.id,
-    versionInt: 1,
-    body: draft.body,
-    platformVariants: {},
-    draftPayload: draft as unknown as Record<string, unknown>,
-    changeSummary: "AI-generated initial draft",
-  });
+    await db.insert(auditLogs).values({
+      orgId: org.id,
+      clientId: client.id,
+      action: "content_generated",
+      entityType: "content_item",
+      entityId: item!.id,
+      payload: {
+        platform,
+        contentType: body.contentType,
+        locale: draft.locale,
+        contentScore,
+        autoApproved,
+        topic: body.topic,
+      },
+    });
 
-  // Audit
-  await db.insert(auditLogs).values({
-    orgId: org.id,
-    clientId: client.id,
-    action: "content_generated",
-    entityType: "content_item",
-    entityId: item!.id,
-    payload: {
-      platform: body.platform,
-      contentType: body.contentType,
-      locale: draft.locale,
+    results.push({
+      platform,
+      contentItemId: item!.id,
+      draft,
       contentScore,
       autoApproved,
-      topic: body.topic,
-    },
-  });
+      status: item!.status,
+    });
+  }
 
-  return NextResponse.json({
-    contentItemId: item!.id,
-    draft,
-    contentScore,
-    autoApproved,
-    status: item!.status,
-  });
+  // Backward compatibility: if single platform, return flat object
+  if (platforms.length === 1 && body.platform) {
+    const r = results[0]!;
+    return NextResponse.json({
+      contentItemId: r.contentItemId,
+      draft: r.draft,
+      contentScore: r.contentScore,
+      autoApproved: r.autoApproved,
+      status: r.status,
+    });
+  }
+
+  return NextResponse.json({ results });
 }

@@ -416,6 +416,8 @@ export const assets = pgTable("assets", {
   sizeBytes: integer("size_bytes"),
   storageKey: varchar("storage_key", { length: 512 }).notNull(),
   publicUrl: varchar("public_url", { length: 1024 }),
+  /** intake_upload | portal_upload | agency_upload | generated */
+  source: varchar("source", { length: 64 }).notNull().default("agency_upload"),
   /** { width, height, duration, aspectRatio } */
   dimensions: jsonb("dimensions").notNull().default({}),
   /** AI-generated content tags for search */
@@ -682,4 +684,71 @@ export const reportSchedules = pgTable("report_schedules", {
   nextSendAt: timestamp("next_send_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull()
+});
+
+// ── Portal Messages (client↔team chat) ───────────────────────────────────────
+
+export const portalMessageSenderEnum = pgEnum("portal_message_sender", [
+  "team",
+  "client",
+]);
+
+export const portalMessages = pgTable("portal_messages", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  clientId: uuid("client_id").notNull(),
+  senderType: portalMessageSenderEnum("sender_type").notNull(),
+  senderName: varchar("sender_name", { length: 255 }).notNull(),
+  body: text("body").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+// ── Invoices ────────────────────────────────────────────────────────────────
+
+export const invoiceStatusEnum = pgEnum("invoice_status", [
+  "draft",
+  "open",
+  "paid",
+  "uncollectible",
+  "void",
+]);
+
+export const invoices = pgTable("invoices", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  clientId: uuid("client_id").notNull(),
+  orgId: uuid("org_id").notNull(),
+  stripeInvoiceId: varchar("stripe_invoice_id", { length: 255 }),
+  amountCents: integer("amount_cents").notNull(),
+  status: invoiceStatusEnum("status").notNull().default("open"),
+  invoiceDate: timestamp("invoice_date", { withTimezone: true }).defaultNow().notNull(),
+  dueDate: timestamp("due_date", { withTimezone: true }),
+  pdfUrl: varchar("pdf_url", { length: 1024 }),
+  description: varchar("description", { length: 512 }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+// ── Tasks ───────────────────────────────────────────────────────────────────
+
+export const taskPriorityEnum = pgEnum("task_priority", [
+  "low",
+  "medium",
+  "high",
+]);
+
+export const taskStatusEnum = pgEnum("task_status", [
+  "todo",
+  "in_progress",
+  "done",
+]);
+
+export const tasks = pgTable("tasks", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  clientId: uuid("client_id"),
+  assigneeId: uuid("assignee_id"),
+  status: taskStatusEnum("status").notNull().default("todo"),
+  priority: taskPriorityEnum("priority").notNull().default("medium"),
+  dueDate: timestamp("due_date", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
 });

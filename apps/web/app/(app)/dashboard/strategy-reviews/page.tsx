@@ -1,7 +1,7 @@
 
-import { auth } from "@clerk/nextjs/server";
+import { requireOrgAuth } from "@/lib/auth-org";
 import { createDb } from "@getpostflow/db";
-import { clients, orgs, clientBrandStrategies } from "@getpostflow/db";
+import { clients, clientBrandStrategies } from "@getpostflow/db";
 import { eq, desc } from "drizzle-orm";
 import { Badge } from "@getpostflow/ui/badge";
 import { Card, CardContent, CardHeader } from "@getpostflow/ui/card";
@@ -32,20 +32,11 @@ const STRATEGY_STATUS_VARIANT: Record<string, "default" | "success" | "warning" 
 };
 
 export default async function StrategyReviewsPage() {
-  const { orgId } = await auth();
-
   const db = createDb(process.env.DATABASE_URL!);
 
-  const [org] = orgId
-    ? await db
-        .select({ id: orgs.id })
-        .from(orgs)
-        .where(eq(orgs.clerkOrgId, orgId))
-        .limit(1)
-    : [];
+  const { orgRow: org } = await requireOrgAuth();
 
-  const strategies = org
-    ? await db
+  const strategies = await db
         .select({
           id: clientBrandStrategies.id,
           clientId: clientBrandStrategies.clientId,
@@ -58,8 +49,7 @@ export default async function StrategyReviewsPage() {
         .from(clientBrandStrategies)
         .innerJoin(clients, eq(clientBrandStrategies.clientId, clients.id))
         .where(eq(clients.orgId, org.id))
-        .orderBy(desc(clientBrandStrategies.createdAt))
-    : [];
+        .orderBy(desc(clientBrandStrategies.createdAt));
 
   const pendingReview = strategies.filter((s) => s.status === "strategist_pending");
   const awaitingClient = strategies.filter((s) => s.status === "client_pending");

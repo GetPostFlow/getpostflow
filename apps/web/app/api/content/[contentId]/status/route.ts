@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { requireOrgAuthApi } from "@/lib/auth-org";
 import { NextRequest, NextResponse } from "next/server";
 import { createDb } from "@getpostflow/db";
 import {
@@ -25,10 +25,11 @@ interface Params {
  */
 export async function PATCH(req: NextRequest, { params }: Params) {
   const { contentId } = await params;
-  const { userId, orgId } = await auth();
-  if (!userId || !orgId) {
+  const authResult = await requireOrgAuthApi();
+  if (!authResult) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const { userId, orgRow: org } = authResult;
 
   const body = (await req.json()) as {
     status?: string;
@@ -43,13 +44,6 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   };
 
   const db = createDb(process.env.DATABASE_URL!);
-
-  const [org] = await db
-    .select({ id: orgs.id })
-    .from(orgs)
-    .where(eq(orgs.clerkOrgId, orgId))
-    .limit(1);
-  if (!org) return NextResponse.json({ error: "Org not found" }, { status: 404 });
 
   const [item] = await db
     .select()
@@ -195,19 +189,13 @@ export async function PATCH(req: NextRequest, { params }: Params) {
  */
 export async function GET(req: NextRequest, { params }: Params) {
   const { contentId } = await params;
-  const { userId, orgId } = await auth();
-  if (!userId || !orgId) {
+  const authResult = await requireOrgAuthApi();
+  if (!authResult) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const { userId, orgRow: org } = authResult;
 
   const db = createDb(process.env.DATABASE_URL!);
-
-  const [org] = await db
-    .select({ id: orgs.id })
-    .from(orgs)
-    .where(eq(orgs.clerkOrgId, orgId))
-    .limit(1);
-  if (!org) return NextResponse.json({ error: "Org not found" }, { status: 404 });
 
   const [item] = await db
     .select()

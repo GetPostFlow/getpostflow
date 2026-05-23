@@ -1,7 +1,7 @@
-import { auth } from "@clerk/nextjs/server";
-import { redirect, notFound } from "next/navigation";
+import { notFound } from "next/navigation";
+import { requireOrgAuth } from "@/lib/auth-org";
 import { createDb } from "@getpostflow/db";
-import { clients, orgs, clientIntakeSubmissions } from "@getpostflow/db";
+import { clients, clientIntakeSubmissions } from "@getpostflow/db";
 import { eq, and, desc } from "drizzle-orm";
 import IntakeForm from "./_intake-form";
 
@@ -11,18 +11,9 @@ interface Props {
 
 export default async function IntakePage({ params }: Props) {
   const { id } = await params;
-  const { userId, orgId } = await auth();
-  if (!userId || !orgId) redirect("/sign-in");
+  const { orgRow: org } = await requireOrgAuth();
 
   const db = createDb(process.env.DATABASE_URL!);
-
-  const [org] = await db
-    .select({ id: orgs.id })
-    .from(orgs)
-    .where(eq(orgs.clerkOrgId, orgId))
-    .limit(1);
-
-  if (!org) notFound();
 
   const [client] = await db
     .select()

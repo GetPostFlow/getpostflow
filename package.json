@@ -28,6 +28,7 @@
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "drizzle-kit": "^0.31.4",
+    "pg": "^8.21.0",
     "tailwindcss": "^4.1.11",
     "ts-node": "^10.9.2",
     "turbo": "^2.0.14",

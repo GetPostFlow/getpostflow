@@ -20,13 +20,33 @@ const PLATFORM_LABELS: Record<string, string> = {
   pinterest: "Pinterest",
 };
 
+const PLATFORM_HINTS: Record<string, string> = {
+  instagram: "Square image (1080×1080). Caption up to 2,200 chars.",
+  facebook: "Landscape (1200×630). Longer text OK.",
+  tiktok: "Vertical video (9:16). Hook in first 3s.",
+  youtube: "Thumbnail 1280×720. Description up to 5,000 chars.",
+  linkedin: "Landscape (1200×627). Professional tone.",
+  pinterest: "Vertical (1000×1500). Rich pins enabled.",
+};
+
+const PLATFORM_LIMITS: Record<string, number> = {
+  instagram: 2200,
+  facebook: 63206,
+  tiktok: 2200,
+  youtube: 5000,
+  linkedin: 3000,
+  pinterest: 500,
+};
+
 interface ContentItem {
   id: string;
   title: string;
   platform: string;
   body: string;
+  callToAction: string;
   scheduledFor: string | null;
   status: string;
+  contentType: string;
 }
 
 interface Props {
@@ -134,12 +154,14 @@ export default function PortalContentApprovalClient({ clientName, token, items }
 
             return (
               <div key={item.id} style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: "16px", padding: "20px", marginBottom: "16px" }}>
-                {/* Platform badge */}
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
+                {/* Top row: platform + scheduled + type */}
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px", flexWrap: "wrap" }}>
                   <span
                     style={{
-                      display: "inline-block",
-                      padding: "3px 10px",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      padding: "4px 10px",
                       borderRadius: "999px",
                       fontSize: "11px",
                       fontWeight: 600,
@@ -147,21 +169,70 @@ export default function PortalContentApprovalClient({ clientName, token, items }
                       color: PLATFORM_COLORS[item.platform] ?? "#6b7280",
                     }}
                   >
+                    <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: PLATFORM_COLORS[item.platform] ?? "#6b7280" }}></span>
                     {PLATFORM_LABELS[item.platform] ?? item.platform}
                   </span>
+                  <span
+                    style={{
+                      display: "inline-block",
+                      padding: "3px 10px",
+                      borderRadius: "999px",
+                      fontSize: "11px",
+                      fontWeight: 500,
+                      background: "#f3f4f6",
+                      color: "#6b7280",
+                      textTransform: "capitalize",
+                    }}
+                  >
+                    {item.contentType}
+                  </span>
                   {item.scheduledFor && (
-                    <span style={{ fontSize: "12px", color: "#9ca3af" }}>
+                    <span style={{ fontSize: "12px", color: "#9ca3af", marginLeft: "auto" }}>
                       Scheduled for {new Date(item.scheduledFor).toLocaleDateString("en-US", { month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                     </span>
                   )}
                 </div>
 
+                {/* Thumbnail / placeholder */}
+                <div
+                  style={{
+                    width: "100%",
+                    height: "160px",
+                    borderRadius: "12px",
+                    background: "#f9fafb",
+                    border: "1px dashed #d1d5db",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginBottom: "16px",
+                    overflow: "hidden",
+                  }}
+                >
+                  <div style={{ textAlign: "center", color: "#9ca3af", fontSize: "13px" }}>
+                    <div style={{ fontSize: "28px", marginBottom: "6px" }}>🖼</div>
+                    Image will be generated
+                  </div>
+                </div>
+
                 {/* Title */}
-                <h3 style={{ fontWeight: 600, fontSize: "16px", color: "#1a1a1a", marginBottom: "12px" }}>{item.title}</h3>
+                <h3 style={{ fontWeight: 600, fontSize: "16px", color: "#1a1a1a", marginBottom: "8px" }}>{item.title}</h3>
 
                 {/* Post preview */}
-                <div style={{ background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: "12px", padding: "14px", marginBottom: "16px" }}>
+                <div style={{ background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: "12px", padding: "14px", marginBottom: "12px" }}>
                   <p style={{ fontSize: "14px", lineHeight: 1.7, color: "#374151", margin: 0, whiteSpace: "pre-wrap" }}>{item.body}</p>
+                  {item.callToAction && (
+                    <p style={{ fontSize: "13px", fontWeight: 600, color: "#2F5D62", marginTop: "8px" }}>
+                      CTA: {item.callToAction}
+                    </p>
+                  )}
+                </div>
+
+                {/* Format hint */}
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
+                  <span style={{ fontSize: "11px", color: "#9ca3af", background: "#f3f4f6", padding: "3px 8px", borderRadius: "6px" }}>
+                    {item.body.length} / {PLATFORM_LIMITS[item.platform] ?? 2200} chars
+                  </span>
+                  <span style={{ fontSize: "11px", color: "#9ca3af" }}>{PLATFORM_HINTS[item.platform] ?? ""}</span>
                 </div>
 
                 {/* Decision buttons */}

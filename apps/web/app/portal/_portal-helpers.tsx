@@ -81,7 +81,7 @@ export function PortalNav({
   orgSlug: string;
   clientSlug: string;
   token: string;
-  active: "strategy" | "content" | "calendar" | "notifications" | "report";
+  active: "strategy" | "content" | "calendar" | "notifications" | "report" | "uploads" | "messages" | "billing";
 }) {
   const base = `/portal/${orgSlug}/${clientSlug}`;
   const q = `?token=${token}`;
@@ -90,22 +90,26 @@ export function PortalNav({
     { id: "strategy", label: "Brand Strategy", href: `${base}/strategy${q}` },
     { id: "content", label: "Content Approval", href: `${base}/content${q}` },
     { id: "calendar", label: "Content Calendar", href: `${base}/calendar${q}` },
+    { id: "uploads", label: "Upload Content", href: `${base}/uploads${q}` },
+    { id: "messages", label: "Messages", href: `${base}/messages${q}` },
     { id: "notifications", label: "Notifications", href: `${base}/notifications${q}` },
     { id: "report", label: "Monthly Report", href: `${base}/report${q}` },
+    { id: "billing", label: "Billing", href: `${base}/billing${q}` },
   ] as const;
 
   return (
     <nav
       style={{
         display: "flex",
-        gap: "4px",
+        gap: "6px",
         background: "#fff",
         borderRadius: "14px",
         border: "1px solid #e5e7eb",
-        padding: "4px",
+        padding: "5px",
         marginBottom: "28px",
         overflowX: "auto",
         flexWrap: "wrap",
+        boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
       }}
     >
       {items.map((item) => (
@@ -113,7 +117,7 @@ export function PortalNav({
           key={item.id}
           href={item.href}
           style={{
-            padding: "6px 16px",
+            padding: "7px 16px",
             borderRadius: "10px",
             fontSize: "13px",
             fontWeight: 500,
@@ -122,6 +126,7 @@ export function PortalNav({
             color: active === item.id ? "#fff" : "#6b7280",
             whiteSpace: "nowrap",
             transition: "all 0.15s",
+            boxShadow: active === item.id ? "0 1px 3px rgba(47,93,98,0.25)" : "none",
           }}
         >
           {item.label}

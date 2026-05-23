@@ -1,10 +1,9 @@
-import { auth } from "@clerk/nextjs/server";
-import { redirect, notFound } from "next/navigation";
+import { notFound } from "next/navigation";
+import { requireOrgAuth } from "@/lib/auth-org";
 import { createDb } from "@getpostflow/db";
-import { assets, clients, orgs } from "@getpostflow/db";
+import { assets, clients } from "@getpostflow/db";
 import { eq, and, desc } from "drizzle-orm";
 import Link from "next/link";
-import { Card, CardContent, CardHeader } from "@getpostflow/ui/card";
 import AssetLibraryClient from "./_asset-library-client";
 
 interface Props {
@@ -16,17 +15,9 @@ export default async function AssetLibraryPage({ params, searchParams }: Props) 
   const { id } = await params;
   const { type, tag } = await searchParams;
 
-  const { userId, orgId } = await auth();
-  if (!userId || !orgId) redirect("/sign-in");
+  const { orgRow: org } = await requireOrgAuth();
 
   const db = createDb(process.env.DATABASE_URL!);
-
-  const [org] = await db
-    .select({ id: orgs.id })
-    .from(orgs)
-    .where(eq(orgs.clerkOrgId, orgId))
-    .limit(1);
-  if (!org) notFound();
 
   const [client] = await db
     .select({ id: clients.id, name: clients.name })
@@ -127,6 +118,7 @@ export default async function AssetLibraryPage({ params, searchParams }: Props) 
           sizeBytes: a.sizeBytes ?? 0,
           storageKey: a.storageKey,
           publicUrl: a.publicUrl ?? null,
+          source: (a.source as string) ?? "agency_upload",
           aiTags: (a.aiTags as string[]) ?? [],
           tags: (a.tags as string[]) ?? [],
           createdAt: a.createdAt.toISOString(),

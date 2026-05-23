@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { saveIntakeDraft, submitIntake } from "../../actions";
+import AssetUploader from "@/components/asset-uploader";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -561,6 +562,19 @@ export default function IntakeFormPage({ clientId, initialData }: { clientId: st
                   />
                 </div>
               </div>
+            </div>
+
+            {/* Brand asset file uploads */}
+            <div className="rounded-xl border p-4" style={{ borderColor: "var(--border-soft)", background: "var(--subtle)" }}>
+              <p className="text-xs font-medium mb-1" style={{ color: "var(--text-primary)" }}>Upload Brand Files</p>
+              <p className="text-xs mb-3" style={{ color: "var(--text-muted)" }}>
+                Upload your logo, photos, sample videos — we&apos;ll use them when creating your content.
+              </p>
+              <AssetUploader
+                clientId={clientId}
+                source="intake_upload"
+                authMode="dashboard"
+              />
             </div>
 
             {/* Summary */}

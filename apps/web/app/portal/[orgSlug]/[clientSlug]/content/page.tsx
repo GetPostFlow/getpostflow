@@ -41,7 +41,7 @@ export default async function PortalContentPage({ params, searchParams }: Props)
         .where(eq(contentVersions.contentItemId, item.id))
         .limit(1);
 
-      const payload = item.draftPayload as { captionBody?: string } | null;
+      const payload = item.draftPayload as { captionBody?: string; callToAction?: string; mediaPrompts?: string[] } | null;
       const body = version?.body ?? payload?.captionBody ?? item.title;
 
       return {
@@ -49,8 +49,10 @@ export default async function PortalContentPage({ params, searchParams }: Props)
         title: item.title,
         platform: item.platform ?? "instagram",
         body,
+        callToAction: payload?.callToAction ?? "",
         scheduledFor: item.scheduledFor?.toISOString() ?? null,
         status: item.status,
+        contentType: item.contentType ?? "post",
       };
     })
   );

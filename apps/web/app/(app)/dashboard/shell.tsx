@@ -81,6 +81,16 @@ const NAV_ITEMS: NavItem[] = [
     ),
   },
   {
+    id: "tasks",
+    label: "Tasks",
+    href: "/dashboard/tasks",
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M3 3h10v2H3V3zm0 4h7v2H3V7zm0 4h5v2H3v-2zm9-2l2 2 3-3-1.4-1.4L13 11.2l-.6-.6L11 12z" />
+      </svg>
+    ),
+  },
+  {
     id: "community",
     label: "Community",
     href: "/dashboard/community",
@@ -120,6 +130,7 @@ function getActiveId(pathname: string): string {
   if (pathname.startsWith("/dashboard/content-queue")) return "content-queue";
   if (pathname.startsWith("/dashboard/client-approvals")) return "client-approvals";
   if (pathname.startsWith("/dashboard/inbox")) return "inbox";
+  if (pathname.startsWith("/dashboard/tasks")) return "tasks";
   if (pathname.startsWith("/dashboard/community")) return "community";
   if (pathname.startsWith("/dashboard/analytics")) return "analytics";
   if (pathname.startsWith("/dashboard/settings") || pathname.startsWith("/dashboard/billing")) return "settings";
@@ -137,6 +148,7 @@ function getPageTitle(pathname: string): string {
   if (pathname.startsWith("/dashboard/strategy-reviews")) return "Strategy Reviews";
   if (pathname.startsWith("/dashboard/content-queue")) return "Content Queue";
   if (pathname.startsWith("/dashboard/client-approvals")) return "Client Approvals";
+  if (pathname.startsWith("/dashboard/tasks")) return "Tasks";
   if (pathname.startsWith("/dashboard/inbox")) return "Inbox";
   if (pathname.startsWith("/dashboard/community")) return "Community Management";
   if (pathname.startsWith("/dashboard/analytics")) return "Analytics";
@@ -161,6 +173,14 @@ interface InAppNotification {
 const STUB_NOTIFICATIONS: InAppNotification[] = [
   {
     id: "1",
+    title: "New client: Northwind Studio",
+    body: "Assign a team member to get started.",
+    href: "/dashboard/clients",
+    read: false,
+    createdAt: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
+  },
+  {
+    id: "2",
     title: "Strategy awaiting review",
     body: "Acme Bakery — Brand strategy is ready for your review.",
     href: "/dashboard/strategy-reviews",
@@ -168,7 +188,7 @@ const STUB_NOTIFICATIONS: InAppNotification[] = [
     createdAt: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
   },
   {
-    id: "2",
+    id: "3",
     title: "Client approved strategy",
     body: "Demo Client approved the brand strategy.",
     href: "/dashboard/client-approvals",
@@ -176,7 +196,7 @@ const STUB_NOTIFICATIONS: InAppNotification[] = [
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
   },
   {
-    id: "3",
+    id: "4",
     title: "New intake form submitted",
     body: "Fresh Roast Coffee submitted their brand intake form.",
     href: "/dashboard/intake-reviews",
