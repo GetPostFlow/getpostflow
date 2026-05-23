@@ -1,7 +1,7 @@
 
-import { auth } from "@clerk/nextjs/server";
+import { requireOrgAuth } from "@/lib/auth-org";
 import { createDb } from "@getpostflow/db";
-import { clients, orgs, clientIntakeSubmissions } from "@getpostflow/db";
+import { clients, clientIntakeSubmissions } from "@getpostflow/db";
 import { eq, desc } from "drizzle-orm";
 import { Badge } from "@getpostflow/ui/badge";
 import { Card, CardContent, CardHeader } from "@getpostflow/ui/card";
@@ -14,20 +14,11 @@ export const metadata: Metadata = {
 };
 
 export default async function IntakeReviewsPage() {
-  const { orgId } = await auth();
-
   const db = createDb(process.env.DATABASE_URL!);
 
-  const [org] = orgId
-    ? await db
-        .select({ id: orgs.id })
-        .from(orgs)
-        .where(eq(orgs.clerkOrgId, orgId))
-        .limit(1)
-    : [];
+  const { orgRow: org } = await requireOrgAuth();
 
-  const intakes = org
-    ? await db
+  const intakes = await db
         .select({
           id: clientIntakeSubmissions.id,
           clientId: clientIntakeSubmissions.clientId,
@@ -40,8 +31,7 @@ export default async function IntakeReviewsPage() {
         .from(clientIntakeSubmissions)
         .innerJoin(clients, eq(clientIntakeSubmissions.clientId, clients.id))
         .where(eq(clients.orgId, org.id))
-        .orderBy(desc(clientIntakeSubmissions.createdAt))
-    : [];
+        .orderBy(desc(clientIntakeSubmissions.createdAt));
 
   const submitted = intakes.filter((i) => !i.isDraft);
   const drafts = intakes.filter((i) => i.isDraft);

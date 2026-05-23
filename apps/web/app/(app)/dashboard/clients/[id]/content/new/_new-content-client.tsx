@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader } from "@getpostflow/ui/card";
-import { Badge } from "@getpostflow/ui/badge";
 
 const PLATFORMS = [
   { key: "instagram", label: "Instagram", color: "#E1306C" },
@@ -42,6 +41,16 @@ interface ContentDraft {
     captionSuggestion: string;
     trendingAudioHashtag?: string;
   };
+  platform: string;
+  contentType: string;
+}
+
+interface PlatformResult {
+  draft: ContentDraft;
+  contentItemId: string;
+  contentScore: number;
+  autoApproved: boolean;
+  status: string;
 }
 
 interface Props {
@@ -53,7 +62,7 @@ export default function NewContentForm({ clientId, clientName }: Props) {
   const router = useRouter();
 
   const [step, setStep] = useState<"configure" | "preview" | "schedule">("configure");
-  const [platform, setPlatform] = useState<string>("instagram");
+  const [platforms, setPlatforms] = useState<string[]>(["instagram"]);
   const [contentType, setContentType] = useState<string>("post");
   const [topic, setTopic] = useState("");
   const [campaignBrief, setCampaignBrief] = useState("");
@@ -62,14 +71,35 @@ export default function NewContentForm({ clientId, clientName }: Props) {
 
   const [generating, setGenerating] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [draft, setDraft] = useState<ContentDraft | null>(null);
-  const [editedBody, setEditedBody] = useState("");
-  const [editedHeadline, setEditedHeadline] = useState("");
-  const [editedCta, setEditedCta] = useState("");
-  const [editedHashtags, setEditedHashtags] = useState("");
-  const [contentItemId, setContentItemId] = useState<string | null>(null);
+  const [resultsByPlatform, setResultsByPlatform] = useState<Record<string, PlatformResult> | null>(null);
+  const [activePlatform, setActivePlatform] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [contentScore, setContentScore] = useState<number | null>(null);
+
+  // Per-platform editable state
+  const [editedBody, setEditedBody] = useState<Record<string, string>>({});
+  const [editedHeadline, setEditedHeadline] = useState<Record<string, string>>({});
+  const [editedCta, setEditedCta] = useState<Record<string, string>>({});
+  const [editedHashtags, setEditedHashtags] = useState<Record<string, string>>({});
+
+  // Per-platform media state
+  const [generatingImage, setGeneratingImage] = useState<Record<string, boolean>>({});
+  const [generatedImageUrl, setGeneratedImageUrl] = useState<Record<string, string | null>>({});
+  const [generatingVideo, setGeneratingVideo] = useState<Record<string, boolean>>({});
+  const [generatedVideoUrl, setGeneratedVideoUrl] = useState<Record<string, string | null>>({});
+  const [selectedAssetUrl, setSelectedAssetUrl] = useState<Record<string, string | null>>({});
+
+  const [assetPickerOpen, setAssetPickerOpen] = useState(false);
+  const [assetPickerTargetPlatform, setAssetPickerTargetPlatform] = useState<string | null>(null);
+  const [clientAssets, setClientAssets] = useState<Array<{ id: string; filename: string; publicUrl: string | null; type: string }>>([]);
+
+  function togglePlatform(key: string) {
+    setPlatforms((prev) => {
+      if (prev.includes(key)) {
+        return prev.length > 1 ? prev.filter((p) => p !== key) : prev;
+      }
+      return [...prev, key];
+    });
+  }
 
   async function handleGenerate() {
     setGenerating(true);
@@ -78,17 +108,29 @@ export default function NewContentForm({ clientId, clientName }: Props) {
       const res = await fetch("/api/content/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ clientId, platform, contentType, topic, campaignBrief, locale }),
+        body: JSON.stringify({ clientId, platforms, contentType, topic, campaignBrief, locale }),
       });
-      const data = await res.json() as { draft: ContentDraft; contentItemId: string; contentScore: number; error?: string };
+      const data = await res.json() as { results?: PlatformResult[]; error?: string };
       if (!res.ok) throw new Error(data.error ?? "Generation failed");
-      setDraft(data.draft);
-      setContentItemId(data.contentItemId);
-      setContentScore(data.contentScore);
-      setEditedBody(data.draft.body);
-      setEditedHeadline(data.draft.headline);
-      setEditedCta(data.draft.callToAction);
-      setEditedHashtags(data.draft.hashtags.join(" "));
+      const results = data.results ?? [];
+      const byPlatform: Record<string, PlatformResult> = {};
+      const bodyMap: Record<string, string> = {};
+      const headlineMap: Record<string, string> = {};
+      const ctaMap: Record<string, string> = {};
+      const hashtagsMap: Record<string, string> = {};
+      for (const r of results) {
+        byPlatform[r.draft.platform] = r;
+        bodyMap[r.draft.platform] = r.draft.body;
+        headlineMap[r.draft.platform] = r.draft.headline;
+        ctaMap[r.draft.platform] = r.draft.callToAction;
+        hashtagsMap[r.draft.platform] = r.draft.hashtags.join(" ");
+      }
+      setResultsByPlatform(byPlatform);
+      setActivePlatform(results[0]?.draft.platform ?? null);
+      setEditedBody(bodyMap);
+      setEditedHeadline(headlineMap);
+      setEditedCta(ctaMap);
+      setEditedHashtags(hashtagsMap);
       setStep("preview");
     } catch (e) {
       setError((e as Error).message);
@@ -97,30 +139,106 @@ export default function NewContentForm({ clientId, clientName }: Props) {
     }
   }
 
+  async function handleGenerateImage(platform: string) {
+    const headline = editedHeadline[platform];
+    if (!headline?.trim()) return;
+    setGeneratingImage((prev) => ({ ...prev, [platform]: true }));
+    setError(null);
+    try {
+      const res = await fetch("/api/content/generate-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clientId, prompt: headline, platform }),
+      });
+      const data = (await res.json()) as { url?: string; error?: string };
+      if (!res.ok || data.error) throw new Error(data.error ?? "Image generation failed");
+      setGeneratedImageUrl((prev) => ({ ...prev, [platform]: data.url ?? null }));
+      setSelectedAssetUrl((prev) => ({ ...prev, [platform]: data.url ?? null }));
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setGeneratingImage((prev) => ({ ...prev, [platform]: false }));
+    }
+  }
+
+  async function handleGenerateVideo(platform: string) {
+    const result = resultsByPlatform?.[platform];
+    const prompt = result?.draft.videoScript?.hook ?? editedHeadline[platform];
+    if (!prompt?.trim()) return;
+    setGeneratingVideo((prev) => ({ ...prev, [platform]: true }));
+    setError(null);
+    try {
+      const res = await fetch("/api/content/generate-video", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clientId, prompt, platform }),
+      });
+      const data = (await res.json()) as { url?: string; error?: string };
+      if (!res.ok || data.error) throw new Error(data.error ?? "Video generation failed");
+      setGeneratedVideoUrl((prev) => ({ ...prev, [platform]: data.url ?? null }));
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setGeneratingVideo((prev) => ({ ...prev, [platform]: false }));
+    }
+  }
+
+  async function openAssetPicker(platform: string) {
+    setAssetPickerTargetPlatform(platform);
+    setAssetPickerOpen(true);
+    try {
+      const res = await fetch(`/api/assets?clientId=${clientId}`);
+      const data = (await res.json()) as { assets?: Array<{ id: string; filename: string; publicUrl: string | null; contentType: string }> };
+      setClientAssets(
+        (data.assets ?? []).map((a) => ({
+          id: a.id,
+          filename: a.filename,
+          publicUrl: a.publicUrl,
+          type: a.contentType.startsWith("image/") ? "image" : a.contentType.startsWith("video/") ? "video" : "document",
+        }))
+      );
+    } catch {
+      setClientAssets([]);
+    }
+  }
+
+  function selectAsset(url: string) {
+    if (assetPickerTargetPlatform) {
+      setSelectedAssetUrl((prev) => ({ ...prev, [assetPickerTargetPlatform]: url }));
+    }
+    setAssetPickerOpen(false);
+    setAssetPickerTargetPlatform(null);
+  }
+
   async function handleSubmitForReview() {
-    if (!contentItemId) return;
+    if (!resultsByPlatform) return;
     setSubmitting(true);
     setError(null);
     try {
-      const res = await fetch(`/api/content/${contentItemId}/status`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          status: "pending_review",
-          scheduledFor: scheduledFor || undefined,
-          edits: {
-            body: editedBody,
-            headline: editedHeadline,
-            callToAction: editedCta,
-            hashtags: editedHashtags.split(/\s+/).filter(Boolean),
-          },
-        }),
-      });
-      if (!res.ok) {
-        const data = await res.json() as { error?: string };
-        throw new Error(data.error ?? "Submit failed");
+      const platformsToSubmit = Object.keys(resultsByPlatform);
+      for (const platform of platformsToSubmit) {
+        const result = resultsByPlatform[platform];
+        if (!result) continue;
+        const res = await fetch(`/api/content/${result.contentItemId}/status`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            status: "pending_review",
+            scheduledFor: scheduledFor || undefined,
+            edits: {
+              body: editedBody[platform] ?? result.draft.body,
+              headline: editedHeadline[platform] ?? result.draft.headline,
+              callToAction: editedCta[platform] ?? result.draft.callToAction,
+              hashtags: (editedHashtags[platform] ?? "").split(/\s+/).filter(Boolean),
+            },
+          }),
+        });
+        if (!res.ok) {
+          const data = (await res.json()) as { error?: string };
+          throw new Error(data.error ?? `Submit failed for ${platform}`);
+        }
       }
-      router.push(`/dashboard/clients/${clientId}/content/${contentItemId}`);
+      router.push(`/dashboard/clients/${clientId}/content`);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -128,10 +246,10 @@ export default function NewContentForm({ clientId, clientName }: Props) {
     }
   }
 
-  const selectedPlatform = PLATFORMS.find((p) => p.key === platform);
+  const isVideoType = contentType === "reel" || contentType === "video_script";
 
   return (
-    <div className="flex flex-col gap-6 max-w-3xl">
+    <div className="flex flex-col gap-6 max-w-5xl">
       {/* Step indicator */}
       <div className="flex items-center gap-2">
         {(["configure", "preview", "schedule"] as const).map((s, i) => (
@@ -172,27 +290,31 @@ export default function NewContentForm({ clientId, clientName }: Props) {
           </CardHeader>
           <CardContent>
             <div className="flex flex-col gap-5">
-              {/* Platform selection */}
+              {/* Platform selection — multi-select */}
               <div>
                 <label className="block text-xs font-medium mb-2" style={{ color: "var(--text-secondary)" }}>
-                  Platform
+                  Platforms <span style={{ color: "var(--text-muted)" }}>(select multiple)</span>
                 </label>
                 <div className="flex flex-wrap gap-2">
-                  {PLATFORMS.map((p) => (
-                    <button
-                      key={p.key}
-                      onClick={() => setPlatform(p.key)}
-                      className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition"
-                      style={{
-                        border: `2px solid ${platform === p.key ? p.color : "var(--border-soft)"}`,
-                        background: platform === p.key ? `${p.color}15` : "transparent",
-                        color: platform === p.key ? p.color : "var(--text-secondary)",
-                      }}
-                    >
-                      <span className="inline-block w-2 h-2 rounded-full" style={{ background: p.color }} />
-                      {p.label}
-                    </button>
-                  ))}
+                  {PLATFORMS.map((p) => {
+                    const selected = platforms.includes(p.key);
+                    return (
+                      <button
+                        key={p.key}
+                        onClick={() => togglePlatform(p.key)}
+                        className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition"
+                        style={{
+                          border: `2px solid ${selected ? p.color : "var(--border-soft)"}`,
+                          background: selected ? `${p.color}15` : "transparent",
+                          color: selected ? p.color : "var(--text-secondary)",
+                        }}
+                      >
+                        <span className="inline-block w-2 h-2 rounded-full" style={{ background: p.color }} />
+                        {selected && <span>✓</span>}
+                        {p.label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -230,11 +352,7 @@ export default function NewContentForm({ clientId, clientName }: Props) {
                   onChange={(e) => setTopic(e.target.value)}
                   placeholder="e.g. Summer sale, New product launch, Behind the scenes..."
                   className="w-full rounded-xl px-3 py-2 text-sm outline-none transition"
-                  style={{
-                    border: "1px solid var(--border-soft)",
-                    background: "var(--bg-subtle)",
-                    color: "var(--text-primary)",
-                  }}
+                  style={{ border: "1px solid var(--border-soft)", background: "var(--bg-subtle)", color: "var(--text-primary)" }}
                 />
               </div>
 
@@ -249,11 +367,7 @@ export default function NewContentForm({ clientId, clientName }: Props) {
                   rows={3}
                   placeholder="Any specific campaign context, promotions, or messaging guidelines..."
                   className="w-full rounded-xl px-3 py-2 text-sm outline-none resize-none transition"
-                  style={{
-                    border: "1px solid var(--border-soft)",
-                    background: "var(--bg-subtle)",
-                    color: "var(--text-primary)",
-                  }}
+                  style={{ border: "1px solid var(--border-soft)", background: "var(--bg-subtle)", color: "var(--text-primary)" }}
                 />
               </div>
 
@@ -266,11 +380,7 @@ export default function NewContentForm({ clientId, clientName }: Props) {
                   value={locale}
                   onChange={(e) => setLocale(e.target.value)}
                   className="rounded-xl px-3 py-2 text-sm outline-none transition"
-                  style={{
-                    border: "1px solid var(--border-soft)",
-                    background: "var(--bg-subtle)",
-                    color: "var(--text-primary)",
-                  }}
+                  style={{ border: "1px solid var(--border-soft)", background: "var(--bg-subtle)", color: "var(--text-primary)" }}
                 >
                   <option value="en">English</option>
                   <option value="es">Spanish</option>
@@ -308,7 +418,7 @@ export default function NewContentForm({ clientId, clientName }: Props) {
       )}
 
       {/* Step 2: Edit & Preview */}
-      {step === "preview" && draft && (
+      {step === "preview" && resultsByPlatform && activePlatform && (
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <button
@@ -321,189 +431,292 @@ export default function NewContentForm({ clientId, clientName }: Props) {
               </svg>
               Back
             </button>
-            {contentScore !== null && (
-              <div className="flex items-center gap-2">
-                <span className="text-xs" style={{ color: "var(--text-muted)" }}>AI Content Score</span>
-                <div
-                  className="rounded-full px-2.5 py-0.5 text-xs font-bold"
+            <div className="flex items-center gap-2">
+              <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+                {Object.keys(resultsByPlatform).length} platform{Object.keys(resultsByPlatform).length > 1 ? "s" : ""} generated
+              </span>
+            </div>
+          </div>
+
+          {/* Platform tabs */}
+          <div className="flex flex-wrap gap-2">
+            {Object.keys(resultsByPlatform).map((key) => {
+              const p = PLATFORMS.find((x) => x.key === key);
+              const active = activePlatform === key;
+              return (
+                <button
+                  key={key}
+                  onClick={() => setActivePlatform(key)}
+                  className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition"
                   style={{
-                    background: contentScore >= 0.85 ? "var(--brand-success)15" : contentScore >= 0.7 ? "var(--brand-warning)15" : "var(--brand-danger)15",
-                    color: contentScore >= 0.85 ? "var(--brand-success)" : contentScore >= 0.7 ? "var(--brand-warning)" : "var(--brand-danger)",
+                    border: `2px solid ${active ? p?.color : "var(--border-soft)"}`,
+                    background: active ? `${p?.color}15` : "transparent",
+                    color: active ? p?.color : "var(--text-secondary)",
                   }}
                 >
-                  {Math.round(contentScore * 100)}%
-                </div>
-              </div>
-            )}
+                  <span className="inline-block w-2 h-2 rounded-full" style={{ background: p?.color }} />
+                  {p?.label}
+                </button>
+              );
+            })}
           </div>
 
-          {draft.moderationFlags.length > 0 && (
-            <div
-              className="rounded-xl px-4 py-3 text-sm"
-              style={{ background: "var(--brand-warning)10", color: "var(--brand-warning)", border: "1px solid var(--brand-warning)20" }}
-            >
-              <strong>Moderation flags:</strong> {draft.moderationFlags.join("; ")}
-            </div>
-          )}
+          {/* Active platform editor + preview */}
+          {(() => {
+            const platform = activePlatform;
+            const result = resultsByPlatform[platform];
+            if (!result) return null;
+            const draft = result.draft;
+            const pMeta = PLATFORMS.find((x) => x.key === platform);
+            const hasVideo = isVideoType && draft.videoScript;
 
-          <div className="grid md:grid-cols-2 gap-4">
-            {/* Editor */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <span
-                    className="inline-block w-2.5 h-2.5 rounded-full"
-                    style={{ background: selectedPlatform?.color }}
-                  />
-                  <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-                    Edit Content
-                  </h3>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col gap-4">
-                  <div>
-                    <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Headline</label>
-                    <input
-                      type="text"
-                      value={editedHeadline}
-                      onChange={(e) => setEditedHeadline(e.target.value)}
-                      className="w-full rounded-xl px-3 py-2 text-sm outline-none"
-                      style={{ border: "1px solid var(--border-soft)", background: "var(--bg-subtle)", color: "var(--text-primary)" }}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Body</label>
-                    <textarea
-                      value={editedBody}
-                      onChange={(e) => setEditedBody(e.target.value)}
-                      rows={6}
-                      className="w-full rounded-xl px-3 py-2 text-sm outline-none resize-none"
-                      style={{ border: "1px solid var(--border-soft)", background: "var(--bg-subtle)", color: "var(--text-primary)" }}
-                    />
-                    <div className="text-right text-xs mt-1" style={{ color: "var(--text-muted)" }}>
-                      {editedBody.length} / {draft.platformSpecific.maxLength} chars
+            return (
+              <div className="grid md:grid-cols-2 gap-4">
+                {/* Editor */}
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ background: pMeta?.color }} />
+                      <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+                        Edit {pMeta?.label} Content
+                      </h3>
                     </div>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Call to Action</label>
-                    <input
-                      type="text"
-                      value={editedCta}
-                      onChange={(e) => setEditedCta(e.target.value)}
-                      className="w-full rounded-xl px-3 py-2 text-sm outline-none"
-                      style={{ border: "1px solid var(--border-soft)", background: "var(--bg-subtle)", color: "var(--text-primary)" }}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Hashtags</label>
-                    <input
-                      type="text"
-                      value={editedHashtags}
-                      onChange={(e) => setEditedHashtags(e.target.value)}
-                      placeholder="#hashtag1 #hashtag2"
-                      className="w-full rounded-xl px-3 py-2 text-sm outline-none"
-                      style={{ border: "1px solid var(--border-soft)", background: "var(--bg-subtle)", color: "var(--text-primary)" }}
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Platform preview */}
-            <Card>
-              <CardHeader>
-                <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-                  {selectedPlatform?.label} Preview
-                </h3>
-              </CardHeader>
-              <CardContent>
-                <div
-                  className="rounded-xl p-4"
-                  style={{ background: "var(--bg-subtle)", border: "1px solid var(--border-soft)" }}
-                >
-                  {/* Mock platform post */}
-                  <div className="flex items-center gap-2 mb-3">
-                    <div
-                      className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white"
-                      style={{ background: selectedPlatform?.color }}
-                    >
-                      {clientId.slice(0, 1).toUpperCase()}
-                    </div>
-                    <div>
-                      <div className="text-xs font-bold" style={{ color: "var(--text-primary)" }}>@clienthandle</div>
-                      <div className="text-[10px]" style={{ color: "var(--text-muted)" }}>Just now · {selectedPlatform?.label}</div>
-                    </div>
-                  </div>
-
-                  {/* Media placeholder */}
-                  {draft.mediaPrompts.length > 0 && (
-                    <div
-                      className="w-full rounded-lg mb-3 flex items-center justify-center text-xs"
-                      style={{
-                        background: `${selectedPlatform?.color}15`,
-                        color: "var(--text-muted)",
-                        minHeight: 80,
-                        border: `1px dashed ${selectedPlatform?.color}40`,
-                      }}
-                    >
-                      <div className="text-center px-3">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="mx-auto mb-1" style={{ color: selectedPlatform?.color }}>
-                          <rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" strokeWidth="1.5" />
-                          <circle cx="8.5" cy="8.5" r="1.5" stroke="currentColor" strokeWidth="1.5" />
-                          <path d="M21 15l-5-5L5 21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                        </svg>
-                        <p>{draft.mediaPrompts[0]?.slice(0, 60)}...</p>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-col gap-4">
+                      <div>
+                        <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Headline</label>
+                        <input
+                          type="text"
+                          value={editedHeadline[platform] ?? ""}
+                          onChange={(e) => setEditedHeadline((prev) => ({ ...prev, [platform]: e.target.value }))}
+                          className="w-full rounded-xl px-3 py-2 text-sm outline-none"
+                          style={{ border: "1px solid var(--border-soft)", background: "var(--bg-subtle)", color: "var(--text-primary)" }}
+                        />
                       </div>
-                    </div>
-                  )}
+                      <div>
+                        <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Body</label>
+                        <textarea
+                          value={editedBody[platform] ?? ""}
+                          onChange={(e) => setEditedBody((prev) => ({ ...prev, [platform]: e.target.value }))}
+                          rows={6}
+                          className="w-full rounded-xl px-3 py-2 text-sm outline-none resize-none"
+                          style={{ border: "1px solid var(--border-soft)", background: "var(--bg-subtle)", color: "var(--text-primary)" }}
+                        />
+                        <div className="text-right text-xs mt-1" style={{ color: "var(--text-muted)" }}>
+                          {(editedBody[platform] ?? "").length} / {draft.platformSpecific.maxLength} chars
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Call to Action</label>
+                        <input
+                          type="text"
+                          value={editedCta[platform] ?? ""}
+                          onChange={(e) => setEditedCta((prev) => ({ ...prev, [platform]: e.target.value }))}
+                          className="w-full rounded-xl px-3 py-2 text-sm outline-none"
+                          style={{ border: "1px solid var(--border-soft)", background: "var(--bg-subtle)", color: "var(--text-primary)" }}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>Hashtags</label>
+                        <input
+                          type="text"
+                          value={editedHashtags[platform] ?? ""}
+                          onChange={(e) => setEditedHashtags((prev) => ({ ...prev, [platform]: e.target.value }))}
+                          placeholder="#hashtag1 #hashtag2"
+                          className="w-full rounded-xl px-3 py-2 text-sm outline-none"
+                          style={{ border: "1px solid var(--border-soft)", background: "var(--bg-subtle)", color: "var(--text-primary)" }}
+                        />
+                      </div>
 
-                  <p className="text-xs leading-relaxed whitespace-pre-wrap mb-2" style={{ color: "var(--text-primary)" }}>
-                    {editedBody.slice(0, 200)}{editedBody.length > 200 ? "..." : ""}
-                  </p>
-                  <p className="text-xs" style={{ color: selectedPlatform?.color }}>
-                    {editedHashtags.split(/\s+/).filter(Boolean).slice(0, 5).join(" ")}
-                  </p>
+                      {/* Media generation buttons */}
+                      <div className="flex gap-2 flex-wrap">
+                        {hasVideo ? (
+                          <button
+                            onClick={() => handleGenerateVideo(platform)}
+                            disabled={generatingVideo[platform] || !(editedHeadline[platform] ?? "").trim()}
+                            className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-medium text-white transition hover:opacity-90 disabled:opacity-60"
+                            style={{ background: "#ec4899" }}
+                          >
+                            {generatingVideo[platform] ? (
+                              <>
+                                <svg className="animate-spin" width="12" height="12" viewBox="0 0 24 24" fill="none">
+                                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" strokeDasharray="30 70" />
+                                </svg>
+                                Generating video…
+                              </>
+                            ) : (
+                              <>🎬 Generate video with AI</>
+                            )}
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleGenerateImage(platform)}
+                            disabled={generatingImage[platform] || !(editedHeadline[platform] ?? "").trim()}
+                            className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-medium text-white transition hover:opacity-90 disabled:opacity-60"
+                            style={{ background: "#8b5cf6" }}
+                          >
+                            {generatingImage[platform] ? (
+                              <>
+                                <svg className="animate-spin" width="12" height="12" viewBox="0 0 24 24" fill="none">
+                                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" strokeDasharray="30 70" />
+                                </svg>
+                                Generating…
+                              </>
+                            ) : (
+                              <>✨ Generate image with AI</>
+                            )}
+                          </button>
+                        )}
+                        <button
+                          onClick={() => openAssetPicker(platform)}
+                          className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-medium transition hover:opacity-90"
+                          style={{ border: "1px solid var(--border-soft)", color: "var(--text-secondary)", background: "var(--surface)" }}
+                        >
+                          📁 Use client asset
+                        </button>
+                      </div>
 
-                  <div className="mt-3 pt-2 flex items-center gap-3 text-[10px]" style={{ color: "var(--text-muted)", borderTop: "1px solid var(--border-soft)" }}>
-                    <span>Best time: {draft.platformSpecific.bestTime}</span>
-                    <span>·</span>
-                    <span>Est. engagement: {draft.estimatedEngagement}</span>
-                  </div>
-                </div>
-
-                {/* Video script */}
-                {draft.videoScript && (
-                  <div className="mt-4 rounded-xl p-3" style={{ background: "var(--bg-surface)", border: "1px solid var(--border-soft)" }}>
-                    <h4 className="text-xs font-semibold mb-2" style={{ color: "var(--text-primary)" }}>Video Script</h4>
-                    <div className="flex flex-col gap-2 text-xs" style={{ color: "var(--text-secondary)" }}>
-                      <div><strong>Hook (0-3s):</strong> {draft.videoScript.hook}</div>
-                      <div><strong>Body:</strong> {draft.videoScript.body.slice(0, 100)}...</div>
-                      <div><strong>CTA:</strong> {draft.videoScript.callToAction}</div>
-                      {draft.videoScript.trendingAudioHashtag && (
-                        <div><strong>Trending audio:</strong> {draft.videoScript.trendingAudioHashtag}</div>
+                      {/* Media preview */}
+                      {(generatedVideoUrl[platform] || generatedImageUrl[platform] || selectedAssetUrl[platform]) && (
+                        <div className="mt-2 rounded-xl overflow-hidden border" style={{ borderColor: "var(--border-soft)" }}>
+                          {generatedVideoUrl[platform] ? (
+                            <video
+                              src={generatedVideoUrl[platform]!}
+                              controls
+                              className="w-full h-auto rounded-lg"
+                              style={{ maxHeight: 480 }}
+                            />
+                          ) : (
+                            <img
+                              src={generatedImageUrl[platform] ?? selectedAssetUrl[platform] ?? ""}
+                              alt="Selected asset"
+                              className="w-full h-auto object-contain rounded-lg"
+                            />
+                          )}
+                        </div>
                       )}
                     </div>
-                  </div>
-                )}
+                  </CardContent>
+                </Card>
 
-                {/* Media prompts */}
-                {draft.mediaPrompts.length > 1 && (
-                  <div className="mt-4">
-                    <h4 className="text-xs font-semibold mb-2" style={{ color: "var(--text-secondary)" }}>Media Suggestions</h4>
-                    <ul className="space-y-1">
-                      {draft.mediaPrompts.map((mp, i) => (
-                        <li key={i} className="text-xs flex gap-2" style={{ color: "var(--text-muted)" }}>
-                          <span>•</span>
-                          <span>{mp}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+                {/* Preview */}
+                <Card>
+                  <CardHeader>
+                    <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+                      {pMeta?.label} Preview
+                    </h3>
+                  </CardHeader>
+                  <CardContent>
+                    <div
+                      className="rounded-xl p-4"
+                      style={{ background: "var(--bg-subtle)", border: "1px solid var(--border-soft)" }}
+                    >
+                      {/* Mock platform post */}
+                      <div className="flex items-center gap-2 mb-3">
+                        <div
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white"
+                          style={{ background: pMeta?.color }}
+                        >
+                          {clientName.slice(0, 1).toUpperCase()}
+                        </div>
+                        <div>
+                          <div className="text-xs font-bold" style={{ color: "var(--text-primary)" }}>@{clientName.toLowerCase().replace(/\s+/g, "")}</div>
+                          <div className="text-[10px]" style={{ color: "var(--text-muted)" }}>Just now · {pMeta?.label}</div>
+                        </div>
+                      </div>
+
+                      {/* Media placeholder or actual media */}
+                      {draft.mediaPrompts.length > 0 && !generatedImageUrl[platform] && !selectedAssetUrl[platform] && !generatedVideoUrl[platform] && (
+                        <div
+                          className="w-full rounded-lg mb-3 flex items-center justify-center text-xs"
+                          style={{
+                            background: `${pMeta?.color}15`,
+                            color: "var(--text-muted)",
+                            minHeight: 80,
+                            border: `1px dashed ${pMeta?.color}40`,
+                          }}
+                        >
+                          <div className="text-center px-3">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="mx-auto mb-1" style={{ color: pMeta?.color }}>
+                              <rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" strokeWidth="1.5" />
+                              <circle cx="8.5" cy="8.5" r="1.5" stroke="currentColor" strokeWidth="1.5" />
+                              <path d="M21 15l-5-5L5 21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                            </svg>
+                            <p>{draft.mediaPrompts[0]?.slice(0, 60)}...</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {(generatedImageUrl[platform] || selectedAssetUrl[platform]) && (
+                        <div className="w-full rounded-lg mb-3 overflow-hidden">
+                          <img
+                            src={generatedImageUrl[platform] ?? selectedAssetUrl[platform] ?? ""}
+                            alt="Media"
+                            className="w-full h-auto object-contain rounded-lg"
+                          />
+                        </div>
+                      )}
+
+                      {generatedVideoUrl[platform] && (
+                        <div className="w-full rounded-lg mb-3 overflow-hidden">
+                          <video
+                            src={generatedVideoUrl[platform]!}
+                            controls
+                            className="w-full h-auto rounded-lg"
+                            style={{ maxHeight: 480 }}
+                          />
+                        </div>
+                      )}
+
+                      <p className="text-xs leading-relaxed whitespace-pre-wrap mb-2" style={{ color: "var(--text-primary)" }}>
+                        {(editedBody[platform] ?? "").slice(0, 200)}{(editedBody[platform] ?? "").length > 200 ? "..." : ""}
+                      </p>
+                      <p className="text-xs" style={{ color: pMeta?.color }}>
+                        {(editedHashtags[platform] ?? "").split(/\s+/).filter(Boolean).slice(0, 5).join(" ")}
+                      </p>
+
+                      <div className="mt-3 pt-2 flex items-center gap-3 text-[10px]" style={{ color: "var(--text-muted)", borderTop: "1px solid var(--border-soft)" }}>
+                        <span>Best time: {draft.platformSpecific.bestTime}</span>
+                        <span>·</span>
+                        <span>Est. engagement: {draft.estimatedEngagement}</span>
+                      </div>
+                    </div>
+
+                    {/* Video script */}
+                    {draft.videoScript && (
+                      <div className="mt-4 rounded-xl p-3" style={{ background: "var(--bg-surface)", border: "1px solid var(--border-soft)" }}>
+                        <h4 className="text-xs font-semibold mb-2" style={{ color: "var(--text-primary)" }}>Video Script</h4>
+                        <div className="flex flex-col gap-2 text-xs" style={{ color: "var(--text-secondary)" }}>
+                          <div><strong>Hook (0-3s):</strong> {draft.videoScript.hook}</div>
+                          <div><strong>Body:</strong> {draft.videoScript.body.slice(0, 100)}...</div>
+                          <div><strong>CTA:</strong> {draft.videoScript.callToAction}</div>
+                          {draft.videoScript.trendingAudioHashtag && (
+                            <div><strong>Trending audio:</strong> {draft.videoScript.trendingAudioHashtag}</div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Media prompts */}
+                    {draft.mediaPrompts.length > 1 && (
+                      <div className="mt-4">
+                        <h4 className="text-xs font-semibold mb-2" style={{ color: "var(--text-secondary)" }}>Media Suggestions</h4>
+                        <ul className="space-y-1">
+                          {draft.mediaPrompts.map((mp, i) => (
+                            <li key={i} className="text-xs flex gap-2" style={{ color: "var(--text-muted)" }}>
+                              <span>•</span>
+                              <span>{mp}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            );
+          })()}
 
           {/* Scheduling */}
           <Card>
@@ -524,9 +737,11 @@ export default function NewContentForm({ clientId, clientName }: Props) {
                     style={{ border: "1px solid var(--border-soft)", background: "var(--bg-subtle)", color: "var(--text-primary)" }}
                   />
                 </div>
-                <div className="text-xs" style={{ color: "var(--text-muted)" }}>
-                  Best time: {draft.platformSpecific.bestTime}
-                </div>
+                {activePlatform && resultsByPlatform[activePlatform] && (
+                  <div className="text-xs" style={{ color: "var(--text-muted)" }}>
+                    Best time: {resultsByPlatform[activePlatform]!.draft.platformSpecific.bestTime}
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -538,11 +753,55 @@ export default function NewContentForm({ clientId, clientName }: Props) {
               className="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60"
               style={{ background: "var(--brand-primary)" }}
             >
-              {submitting ? "Submitting..." : "Submit for Review"}
+              {submitting ? "Submitting..." : "Submit All for Review"}
             </button>
             <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-              This will send the draft to the strategist review queue
+              This will send all platform drafts to the strategist review queue
             </span>
+          </div>
+        </div>
+      )}
+
+      {/* Asset picker modal */}
+      {assetPickerOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-6"
+          style={{ background: "rgba(0,0,0,0.4)" }}
+        >
+          <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-xl flex flex-col gap-4">
+            <h3 className="text-base font-bold" style={{ color: "var(--text-primary)" }}>Select Client Asset</h3>
+            {clientAssets.length === 0 ? (
+              <p className="text-xs" style={{ color: "var(--text-muted)" }}>No assets found for this client.</p>
+            ) : (
+              <div className="grid grid-cols-3 gap-3 max-h-64 overflow-y-auto">
+                {clientAssets.map((asset) => (
+                  <button
+                    key={asset.id}
+                    onClick={() => selectAsset(asset.publicUrl ?? "")}
+                    className="flex flex-col items-center gap-2 rounded-xl border p-3 transition hover:bg-[var(--subtle)]"
+                    style={{ borderColor: "var(--border-soft)" }}
+                  >
+                    {asset.type === "image" && asset.publicUrl ? (
+                      <img src={asset.publicUrl} alt={asset.filename} className="w-full h-16 object-cover rounded-lg" />
+                    ) : asset.type === "video" && asset.publicUrl ? (
+                      <video src={asset.publicUrl} className="w-full h-16 object-cover rounded-lg" />
+                    ) : (
+                      <span className="text-2xl">🖼</span>
+                    )}
+                    <span className="text-[10px] truncate w-full text-center" style={{ color: "var(--text-secondary)" }}>{asset.filename}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="flex justify-end">
+              <button
+                onClick={() => setAssetPickerOpen(false)}
+                className="rounded-xl px-4 py-2 text-xs font-medium transition"
+                style={{ border: "1px solid var(--border-soft)", color: "var(--text-secondary)" }}
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}

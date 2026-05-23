@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { requireOrgAuthApi } from "@/lib/auth-org";
 import { NextRequest, NextResponse } from "next/server";
 import { createDb } from "@getpostflow/db";
 import { assets, orgs } from "@getpostflow/db";
@@ -31,10 +31,11 @@ function inferAssetType(mimeType: string): "image" | "video" | "document" | "aud
 }
 
 export async function POST(req: NextRequest) {
-  const { userId, orgId } = await auth();
-  if (!userId || !orgId) {
+  const authResult = await requireOrgAuthApi();
+  if (!authResult) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const { userId, orgRow: org } = authResult;
 
   const body = (await req.json()) as {
     filename: string;
@@ -48,16 +49,6 @@ export async function POST(req: NextRequest) {
   }
 
   const db = createDb(process.env.DATABASE_URL!);
-
-  const [org] = await db
-    .select({ id: orgs.id })
-    .from(orgs)
-    .where(eq(orgs.clerkOrgId, orgId))
-    .limit(1);
-
-  if (!org) {
-    return NextResponse.json({ error: "Org not found" }, { status: 404 });
-  }
 
   const ext = body.filename.split(".").pop() ?? "bin";
   const storageKey = `assets/${org.id}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${ext}`;

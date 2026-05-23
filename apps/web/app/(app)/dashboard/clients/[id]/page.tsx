@@ -6,6 +6,7 @@ import { eq, and, desc, or } from "drizzle-orm";
 import { Badge } from "@getpostflow/ui/badge";
 import { Card, CardContent, CardHeader } from "@getpostflow/ui/card";
 import Link from "next/link";
+import React from "react";
 import { PortalLinkButton } from "./_portal-link-button";
 
 const STATUS_LABELS: Record<string, string> = {
@@ -77,7 +78,7 @@ interface Props {
   searchParams: Promise<{ tab?: string }>;
 }
 
-type Tab = "overview" | "intake" | "strategy" | "content" | "portal" | "accounts" | "analytics" | "activity";
+type Tab = "overview" | "intake" | "strategy" | "content" | "portal" | "accounts" | "analytics" | "activity" | "team";
 
 const TABS: { id: Tab; label: string; description: string }[] = [
   { id: "overview", label: "Client Overview", description: "Client info, status, and connected accounts" },
@@ -88,6 +89,7 @@ const TABS: { id: Tab; label: string; description: string }[] = [
   { id: "accounts", label: "Accounts", description: "This client's connected social media accounts" },
   { id: "analytics", label: "Analytics", description: "Performance metrics for this client" },
   { id: "activity", label: "Activity", description: "Audit log of all actions for this client" },
+  { id: "team", label: "Team", description: "Assign team members to this client" },
 ];
 
 export default async function ClientWorkspacePage({ params, searchParams }: Props) {
@@ -256,6 +258,9 @@ export default async function ClientWorkspacePage({ params, searchParams }: Prop
         )}
         {activeTab === "activity" && (
           <ActivityTab client={client} latestIntake={latestIntake} latestStrategy={latestStrategy} />
+        )}
+        {activeTab === "team" && (
+          <TeamTab client={client} />
         )}
       </div>
     </div>
@@ -1051,6 +1056,87 @@ function ActivityTab({
           </div>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function TeamTab({ client }: { client: { id: string; name: string } }) {
+  const [showModal, setShowModal] = React.useState(false);
+  const [role, setRole] = React.useState<"strategist" | "content_manager">("strategist");
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>Assigned Team</h2>
+          <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>
+            Assign a strategist and content manager to {client.name}.
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader>
+            <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Assigned Strategist</h3>
+          </CardHeader>
+          <CardContent>
+            <p className="text-xs mb-3" style={{ color: "var(--text-muted)" }}>
+              No strategist assigned yet.
+            </p>
+            <button
+              onClick={() => { setRole("strategist"); setShowModal(true); }}
+              className="inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs font-medium text-white transition hover:opacity-90"
+              style={{ background: "var(--brand-primary)" }}
+            >
+              Assign Strategist
+            </button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Assigned Content Manager</h3>
+          </CardHeader>
+          <CardContent>
+            <p className="text-xs mb-3" style={{ color: "var(--text-muted)" }}>
+              No content manager assigned yet.
+            </p>
+            <button
+              onClick={() => { setRole("content_manager"); setShowModal(true); }}
+              className="inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs font-medium text-white transition hover:opacity-90"
+              style={{ background: "var(--brand-primary)" }}
+            >
+              Assign Content Manager
+            </button>
+          </CardContent>
+        </Card>
+      </div>
+
+      {showModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-6"
+          style={{ background: "rgba(0,0,0,0.4)" }}
+        >
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl">
+            <h3 className="text-base font-bold mb-2" style={{ color: "var(--text-primary)" }}>
+              Assign {role === "strategist" ? "Strategist" : "Content Manager"}
+            </h3>
+            <p className="text-xs mb-4" style={{ color: "var(--text-muted)" }}>
+              Team invites are coming in Phase 2. For now, only the owner/admin can manage clients.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setShowModal(false)}
+                className="rounded-xl px-4 py-2 text-xs font-medium transition"
+                style={{ border: "1px solid var(--border-soft)", color: "var(--text-secondary)" }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -6,52 +6,61 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { auth } = await import("@clerk/nextjs/server");
+  const { auth, clerkClient } = await import("@clerk/nextjs/server");
   const { userId, orgId } = await auth();
   if (!userId) redirect("/sign-in");
 
   let clientList: { id: string; name: string }[] = [];
 
-  // Check if the user has an org membership; if not, show the no-org screen
-  // instead of letting them see a broken dashboard.
+  // Resolve the org for this user and fetch the client list for the sidebar.
   try {
     const { createDb, users, orgMemberships, clients, orgs } = await import("@getpostflow/db");
-    const { eq } = await import("drizzle-orm");
+    const { eq, inArray } = await import("drizzle-orm");
     const db = createDb();
 
-    const [user] = await db
-      .select({ id: users.id })
-      .from(users)
-      .where(eq(users.clerkUserId, userId))
-      .limit(1);
+    let resolvedOrgId: string | null = null;
 
-    if (user) {
-      const [membership] = await db
-        .select({ id: orgMemberships.id })
-        .from(orgMemberships)
-        .where(eq(orgMemberships.userId, user.id))
-        .limit(1);
+    // 1. Happy path: Clerk session has an active orgId
+    if (orgId) {
+      const [org] = await db.select({ id: orgs.id }).from(orgs).where(eq(orgs.clerkOrgId, orgId)).limit(1);
+      if (org) resolvedOrgId = org.id;
+    }
 
-      if (!membership) {
-        // User is in Clerk but has no org — show setup page instead of crashing
-        return <NoOrgScreen />;
+    // 2. Fallback: Clerk API for user's org memberships
+    if (!resolvedOrgId) {
+      try {
+        const clerk = await clerkClient();
+        const clerkMemberships = await clerk.users.getOrganizationMembershipList({ userId, limit: 10 });
+        for (const m of clerkMemberships.data) {
+          const mOrgId = m.organization.id;
+          const [org] = await db.select({ id: orgs.id }).from(orgs).where(eq(orgs.clerkOrgId, mOrgId)).limit(1);
+          if (org) { resolvedOrgId = org.id; break; }
+        }
+      } catch {
+        // Clerk API unavailable
       }
     }
 
-    // Fetch client list for the client switcher
-    if (orgId) {
-      const [org] = await db
-        .select({ id: orgs.id })
-        .from(orgs)
-        .where(eq(orgs.clerkOrgId, orgId))
-        .limit(1);
-
-      if (org) {
-        clientList = await db
-          .select({ id: clients.id, name: clients.name })
-          .from(clients)
-          .where(eq(clients.orgId, org.id));
+    // 3. Final fallback: DB memberships, prefer real Clerk orgs
+    if (!resolvedOrgId) {
+      const [user] = await db.select({ id: users.id }).from(users).where(eq(users.clerkUserId, userId)).limit(1);
+      if (user) {
+        const memberships = await db.select({ orgId: orgMemberships.orgId }).from(orgMemberships).where(eq(orgMemberships.userId, user.id));
+        if (memberships.length === 0) {
+          return <NoOrgScreen />;
+        }
+        const orgIds = memberships.map((m) => m.orgId);
+        const orgRows = await db.select({ id: orgs.id, clerkOrgId: orgs.clerkOrgId }).from(orgs).where(inArray(orgs.id, orgIds));
+        const preferred = orgRows.find((o) => o.clerkOrgId?.startsWith("org_")) ?? orgRows[0];
+        if (preferred) resolvedOrgId = preferred.id;
       }
+    }
+
+    if (resolvedOrgId) {
+      clientList = await db
+        .select({ id: clients.id, name: clients.name })
+        .from(clients)
+        .where(eq(clients.orgId, resolvedOrgId));
     }
   } catch {
     // DB check failed — still render the shell; page-level guards will catch missing data

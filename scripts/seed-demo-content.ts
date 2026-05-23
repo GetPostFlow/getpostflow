@@ -166,6 +166,10 @@ const DEMO_ASSETS = [
   { filename: "baker-at-work.mp4", mimeType: "video/mp4", type: "video" as const, aiTags: ["process", "baking", "behind-the-scenes"], sizeBytes: 1024 * 1024 * 12 },
   { filename: "brand-logo.svg", mimeType: "image/svg+xml", type: "image" as const, aiTags: ["logo", "brand", "identity"], sizeBytes: 4800 },
   { filename: "autumn-collection-brief.pdf", mimeType: "application/pdf", type: "document" as const, aiTags: ["brief", "campaign", "autumn"], sizeBytes: 1024 * 120 },
+  { filename: "holiday-promo-banner.jpg", mimeType: "image/jpeg", type: "image" as const, aiTags: ["holiday", "banner", "promotion"], sizeBytes: 1024 * 560 },
+  { filename: "customer-testimonial.mp4", mimeType: "video/mp4", type: "video" as const, aiTags: ["testimonial", "social-proof", "customer"], sizeBytes: 1024 * 1024 * 8 },
+  { filename: "brand-colors-palette.png", mimeType: "image/png", type: "image" as const, aiTags: ["brand", "colors", "palette", "identity"], sizeBytes: 1024 * 45 },
+  { filename: "storefront-photo.jpg", mimeType: "image/jpeg", type: "image" as const, aiTags: ["storefront", "exterior", "location"], sizeBytes: 1024 * 680 },
 ];
 
 // ─── Intake data ──────────────────────────────────────────────────────────────

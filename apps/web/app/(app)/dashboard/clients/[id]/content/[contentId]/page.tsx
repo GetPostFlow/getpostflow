@@ -1,14 +1,13 @@
-import { auth } from "@clerk/nextjs/server";
-import { redirect, notFound } from "next/navigation";
+import { notFound } from "next/navigation";
+import { requireOrgAuth } from "@/lib/auth-org";
 import { createDb } from "@getpostflow/db";
 import {
   contentItems,
   contentVersions,
   clients,
-  orgs,
   approvals,
 } from "@getpostflow/db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, or } from "drizzle-orm";
 import Link from "next/link";
 import { Badge } from "@getpostflow/ui/badge";
 import { Card, CardContent, CardHeader } from "@getpostflow/ui/card";
@@ -44,22 +43,24 @@ interface Props {
 
 export default async function ContentEditorPage({ params }: Props) {
   const { id, contentId } = await params;
-  const { userId, orgId } = await auth();
-  if (!userId || !orgId) redirect("/sign-in");
+  const { orgRow: org } = await requireOrgAuth();
 
   const db = createDb(process.env.DATABASE_URL!);
 
-  const [org] = await db
-    .select({ id: orgs.id })
-    .from(orgs)
-    .where(eq(orgs.clerkOrgId, orgId))
-    .limit(1);
-  if (!org) notFound();
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const isUuid = UUID_RE.test(id);
 
   const [client] = await db
     .select({ id: clients.id, name: clients.name })
     .from(clients)
-    .where(and(eq(clients.id, id), eq(clients.orgId, org.id)))
+    .where(
+      and(
+        isUuid
+          ? or(eq(clients.id, id), eq(clients.slug, id))
+          : eq(clients.slug, id),
+        eq(clients.orgId, org.id)
+      )
+    )
     .limit(1);
   if (!client) notFound();
 
