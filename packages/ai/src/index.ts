@@ -83,3 +83,7 @@ export * from "./content-engine";
 // ─── Phase 6 additions ────────────────────────────────────────────────────────
 
 export * from "./learning-loop";
+
+// ─── Blueprint rebuild: Manus AI client ───────────────────────────────────────
+
+export * from "./manus-client";

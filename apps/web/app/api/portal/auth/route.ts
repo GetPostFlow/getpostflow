@@ -33,7 +33,7 @@ export async function POST(req: Request) {
     const db = createDb(process.env.DATABASE_URL!);
 
     const [client] = await db
-      .select({ id: clients.id, slug: clients.slug, orgId: clients.orgId, name: clients.name })
+      .select({ id: clients.id, slug: clients.slug, orgId: clients.orgId, name: clients.name, status: clients.status })
       .from(clients)
       .where(eq(clients.id, clientId))
       .limit(1);
@@ -66,7 +66,14 @@ export async function POST(req: Request) {
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
     const orgSlug = org.clerkOrgId ?? org.id;
-    const magicLink = `${appUrl}/portal/${orgSlug}/${client.slug}/strategy?token=${tokenHash}`;
+
+    // Determine the correct destination based on client status
+    const destinationPath =
+      client.status === "intake_pending" || client.status === "draft"
+        ? "intake"
+        : "strategy";
+
+    const magicLink = `${appUrl}/portal/${orgSlug}/${client.slug}/${destinationPath}?token=${tokenHash}`;
 
     // ── Send email ──────────────────────────────────────────────────────────
 
@@ -75,12 +82,20 @@ export async function POST(req: Request) {
 
     if (resendKey && resendKey.length > 10) {
       // Real Resend send
-      const emailBody = buildClientStrategyEmail({
-        clientName: client.name,
-        orgName: org.name,
-        magicLink,
-        expiresAt,
-      });
+      const emailBody =
+        destinationPath === "intake"
+          ? buildWelcomeEmail({ clientName: client.name, orgName: org.name, magicLink, expiresAt })
+          : buildClientStrategyEmail({
+              clientName: client.name,
+              orgName: org.name,
+              magicLink,
+              expiresAt,
+            });
+
+      const subject =
+        destinationPath === "intake"
+          ? `Welcome to GetPostFlow — Complete Your Intake`
+          : `Your Brand Strategy is Ready for Review — ${client.name}`;
 
       const resendRes = await fetch("https://api.resend.com/emails", {
         method: "POST",
@@ -91,7 +106,7 @@ export async function POST(req: Request) {
         body: JSON.stringify({
           from: fromEmail,
           to: [email],
-          subject: `Your Brand Strategy is Ready for Review — ${client.name}`,
+          subject,
           html: emailBody,
         }),
       });
@@ -116,6 +131,57 @@ export async function POST(req: Request) {
       { status: 500 }
     );
   }
+}
+
+function buildWelcomeEmail({
+  clientName,
+  orgName,
+  magicLink,
+  expiresAt,
+}: {
+  clientName: string;
+  orgName: string;
+  magicLink: string;
+  expiresAt: Date;
+}): string {
+  const expiresFormatted = expiresAt.toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  return `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+<body style="margin:0;padding:0;font-family:Inter,system-ui,sans-serif;background:#f8f9fa;color:#1a1a1a">
+  <div style="max-width:560px;margin:40px auto;background:#fff;border-radius:16px;border:1px solid #e5e7eb;overflow:hidden">
+    <div style="background:linear-gradient(135deg,#2F5D62 0%,#52b788 100%);padding:28px 32px">
+      <p style="color:white;font-size:20px;font-weight:700;margin:0">GetPostFlow</p>
+      <p style="color:rgba(255,255,255,0.8);font-size:13px;margin:4px 0 0">Social Media Management</p>
+    </div>
+    <div style="padding:32px">
+      <h1 style="font-size:20px;font-weight:700;margin:0 0 12px">Welcome, ${clientName}!</h1>
+      <p style="font-size:14px;color:#4b5563;line-height:1.6;margin:0 0 20px">
+        Thank you for joining <strong>${orgName}</strong> on GetPostFlow. Your payment has been confirmed and your dedicated client portal is ready.
+        Please complete your intake form so our team can begin crafting your social media strategy.
+      </p>
+      <a href="${magicLink}" style="display:inline-block;background:#2F5D62;color:white;text-decoration:none;border-radius:12px;padding:14px 28px;font-size:14px;font-weight:600;margin-bottom:20px">
+        Complete Intake Form →
+      </a>
+      <p style="font-size:12px;color:#9ca3af;margin:0">
+        This link is valid until <strong>${expiresFormatted}</strong>.<br>
+        If you did not expect this email, you can safely ignore it.
+      </p>
+      <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0">
+      <p style="font-size:11px;color:#9ca3af;margin:0">
+        Having trouble? Copy and paste this URL into your browser:<br>
+        <span style="word-break:break-all">${magicLink}</span>
+      </p>
+    </div>
+  </div>
+</body>
+</html>`;
 }
 
 // ── Email template ────────────────────────────────────────────────────────────

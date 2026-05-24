@@ -165,6 +165,16 @@ export const orgMemberships = pgTable("org_memberships", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
 });
 
+// ── Client assignments (RBAC: employee → client restriction) ──────────────────
+
+export const clientAssignments = pgTable("client_assignments", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  orgId: uuid("org_id").notNull(),
+  userId: uuid("user_id").notNull(),
+  clientId: uuid("client_id").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+});
+
 // ── Billing / Plans ───────────────────────────────────────────────────────────
 
 export const plans = pgTable("plans", {

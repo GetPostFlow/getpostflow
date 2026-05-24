@@ -49,6 +49,38 @@ const PLAN_LABELS = ["Starter", "Growth", "Scale", "Performance", "Enterprise"];
 
 export default function PricingPage() {
   const [billingInterval, setBillingInterval] = useState<"monthly" | "annual">("monthly");
+  const [isLoading, setIsLoading] = useState<string | null>(null);
+
+  async function startCheckout(planCode: string) {
+    setIsLoading(planCode);
+    try {
+      const res = await fetch("/api/stripe/checkout-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          planCode,
+          interval: billingInterval,
+          // For public pricing page we don't have an org yet; the checkout will
+          // create a customer and the webhook will handle org resolution via
+          // customer metadata or a post-signup flow. In practice this page is
+          // visited by authenticated users who have an org.
+          orgId: "pending",
+          clientEmail: "",
+          clientName: "",
+        }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert(data.error ?? "Something went wrong. Please try again.");
+        setIsLoading(null);
+      }
+    } catch {
+      alert("Network error. Please try again.");
+      setIsLoading(null);
+    }
+  }
 
   return (
     <div
@@ -295,21 +327,23 @@ export default function PricingPage() {
                       Contact Sales
                     </a>
                   ) : plan.trialDays > 0 ? (
-                    <a
-                      href={`/sign-up?plan=${code}`}
-                      className="block w-full rounded-xl py-2.5 text-center text-sm font-semibold text-white transition hover:opacity-90"
+                    <button
+                      onClick={() => startCheckout(code)}
+                      disabled={isLoading === code}
+                      className="block w-full rounded-xl py-2.5 text-center text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
                       style={{ background: "#2F5D62" }}
                     >
-                      Start free trial
-                    </a>
+                      {isLoading === code ? "Redirecting…" : "Start free trial"}
+                    </button>
                   ) : (
-                    <a
-                      href={`/sign-up?plan=${code}`}
-                      className="block w-full rounded-xl border py-2.5 text-center text-sm font-semibold transition hover:bg-[#EFE7DA]"
+                    <button
+                      onClick={() => startCheckout(code)}
+                      disabled={isLoading === code}
+                      className="block w-full rounded-xl border py-2.5 text-center text-sm font-semibold transition hover:bg-[#EFE7DA] disabled:opacity-50"
                       style={{ borderColor: "#2F5D62", color: "#2F5D62" }}
                     >
-                      Get started
-                    </a>
+                      {isLoading === code ? "Redirecting…" : "Get started"}
+                    </button>
                   )}
                 </div>
               </div>

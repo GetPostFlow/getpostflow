@@ -7,11 +7,50 @@ import { generateBrandStrategy } from "@getpostflow/ai";
 
 const db = () => createDb(process.env.DATABASE_URL!);
 
+// ─── RBAC helpers ─────────────────────────────────────────────────────────────
+
+async function requireAuthAndRole() {
+  const { userId, orgId } = await auth();
+  if (!userId || !orgId) redirect("/sign-in");
+
+  const database = db();
+  const { users, orgMemberships } = await import("@getpostflow/db");
+  const { eq, and } = await import("drizzle-orm");
+
+  const [user] = await database.select({ id: users.id }).from(users).where(eq(users.clerkUserId, userId)).limit(1);
+  if (!user) redirect("/sign-in");
+
+  const [membership] = await database
+    .select({ role: orgMemberships.role })
+    .from(orgMemberships)
+    .where(and(eq(orgMemberships.orgId, orgId), eq(orgMemberships.userId, user.id)))
+    .limit(1);
+
+  const role = membership?.role ?? "support";
+  const isAdmin = role === "org_owner" || role === "org_admin";
+  return { userId, orgId, dbUserId: user.id, role, isAdmin };
+}
+
+async function enforceClientAccess(clientId: string, orgId: string, isAdmin: boolean, dbUserId: string) {
+  if (isAdmin) return;
+  const database = db();
+  const { clientAssignments } = await import("@getpostflow/db");
+  const { eq, and } = await import("drizzle-orm");
+
+  const [assignment] = await database
+    .select()
+    .from(clientAssignments)
+    .where(and(eq(clientAssignments.clientId, clientId), eq(clientAssignments.userId, dbUserId)))
+    .limit(1);
+
+  if (!assignment) throw new Error("Forbidden: You do not have access to this client.");
+}
+
 // ─── Create client ────────────────────────────────────────────────────────────
 
 export async function createClient(formData: FormData) {
-  const { userId, orgId } = await auth();
-  if (!userId || !orgId) redirect("/sign-in");
+  const { userId, orgId, isAdmin } = await requireAuthAndRole();
+  if (!isAdmin) throw new Error("Forbidden: Only admins can create clients.");
 
   const name = formData.get("name") as string;
   const industry = formData.get("industry") as string | null;
@@ -67,8 +106,8 @@ export async function createClient(formData: FormData) {
 // ─── Save intake draft ────────────────────────────────────────────────────────
 
 export async function saveIntakeDraft(clientId: string, payload: Record<string, unknown>) {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
+  const { dbUserId, isAdmin, orgId } = await requireAuthAndRole();
+  await enforceClientAccess(clientId, orgId, isAdmin, dbUserId);
 
   const database = db();
   const { clientIntakeSubmissions } = await import("@getpostflow/db");
@@ -104,8 +143,8 @@ export async function saveIntakeDraft(clientId: string, payload: Record<string, 
 // ─── Submit intake for AI drafting ───────────────────────────────────────────
 
 export async function submitIntake(clientId: string, payload: Record<string, unknown>) {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
+  const { dbUserId, isAdmin, orgId } = await requireAuthAndRole();
+  await enforceClientAccess(clientId, orgId, isAdmin, dbUserId);
 
   const database = db();
   const { clientIntakeSubmissions, clients, clientBrandStrategies } = await import("@getpostflow/db");
@@ -180,8 +219,7 @@ export async function submitIntake(clientId: string, payload: Record<string, unk
 // ─── Strategist approve ───────────────────────────────────────────────────────
 
 export async function strategistApproveStrategy(strategyId: string, editedPayload: Record<string, unknown>) {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
+  const { dbUserId, isAdmin, orgId } = await requireAuthAndRole();
 
   const database = db();
   const { clientBrandStrategies, clients } = await import("@getpostflow/db");
@@ -195,6 +233,10 @@ export async function strategistApproveStrategy(strategyId: string, editedPayloa
 
   if (!strategy) throw new Error("Strategy not found");
 
+  if (!isAdmin) {
+    await enforceClientAccess(strategy.clientId, orgId, isAdmin, dbUserId);
+  }
+
   await database
     .update(clientBrandStrategies)
     .set({ status: "client_pending", editedPayload })
@@ -207,7 +249,7 @@ export async function strategistApproveStrategy(strategyId: string, editedPayloa
 
   // Send magic link to primary contact email if available
   const [clientRecord] = await database
-    .select({ primaryContactEmail: clients.primaryContactEmail, slug: clients.slug, orgId: clients.orgId })
+    .select({ primaryContactEmail: clients.primaryContactEmail, slug: clients.slug, orgId: clients.orgId, name: clients.name })
     .from(clients)
     .where(eq(clients.id, strategy.clientId))
     .limit(1);
@@ -223,6 +265,16 @@ export async function strategistApproveStrategy(strategyId: string, editedPayloa
       });
       const data = await res.json();
       if (data.stubUrl) stubUrl = data.stubUrl as string;
+
+      // Send notification email via central system
+      if (data.sent) {
+        const { sendStrategySentToClientEmail } = await import("@getpostflow/notifications");
+        await sendStrategySentToClientEmail({
+          to: clientRecord.primaryContactEmail,
+          clientName: clientRecord.name,
+          magicLink: data.stubUrl ?? "",
+        }).catch((err) => console.error("[strategistApprove] Notification email failed:", err));
+      }
     } catch (e) {
       console.error('[strategistApprove] Failed to send magic link:', e);
     }
@@ -238,8 +290,7 @@ export async function addStrategistComment(
   comment: string,
   section?: string
 ) {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
+  const { dbUserId, isAdmin, orgId } = await requireAuthAndRole();
 
   const database = db();
   const { clientBrandStrategies } = await import("@getpostflow/db");
@@ -252,11 +303,14 @@ export async function addStrategistComment(
     .limit(1);
 
   if (!strategy) throw new Error("Strategy not found");
+  if (!isAdmin) {
+    await enforceClientAccess(strategy.clientId, orgId, isAdmin, dbUserId);
+  }
 
   const comments = [...((strategy.strategistComments as unknown[]) ?? [])];
   comments.push({
     id: crypto.randomUUID(),
-    authorId: userId,
+    authorId: dbUserId,
     authorName: "Strategist",
     body: comment,
     section,
@@ -318,6 +372,30 @@ export async function clientApproveStrategy(strategyId: string, tokenHash: strin
     .set({ usedAt: now })
     .where(eq(portalTokens.id, token.id));
 
+  // Notify internal team
+  try {
+    const [client] = await database.select().from(clients).where(eq(clients.id, strategy.clientId)).limit(1);
+    if (client) {
+      const { sendStrategyApprovedByClientEmail } = await import("@getpostflow/notifications");
+      const { orgMemberships, users } = await import("@getpostflow/db");
+      const team = await database
+        .select({ userId: orgMemberships.userId })
+        .from(orgMemberships)
+        .where(eq(orgMemberships.orgId, client.orgId));
+      const userIds = team.map((t) => t.userId);
+      if (userIds.length > 0) {
+        const userRows = await database.select({ email: users.email }).from(users).where(eq(users.id, userIds[0]));
+        for (const u of userRows) {
+          if (u.email) {
+            await sendStrategyApprovedByClientEmail({ to: u.email, clientName: client.name }).catch(() => {});
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.error("[clientApproveStrategy] Notification failed:", err);
+  }
+
   return { success: true };
 }
 
@@ -327,8 +405,7 @@ export async function regenerateSection(
   strategyId: string,
   sectionKey: string
 ) {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
+  const { dbUserId, isAdmin, orgId } = await requireAuthAndRole();
 
   const database = db();
   const { clientBrandStrategies, clientIntakeSubmissions } = await import("@getpostflow/db");
@@ -341,6 +418,9 @@ export async function regenerateSection(
     .limit(1);
 
   if (!strategy) throw new Error("Strategy not found");
+  if (!isAdmin) {
+    await enforceClientAccess(strategy.clientId, orgId, isAdmin, dbUserId);
+  }
 
   const [intake] = await database
     .select()
@@ -419,14 +499,45 @@ export async function clientRequestChanges(
     .set({ status: "strategist_review" })
     .where(eq(clients.id, strategy.clientId));
 
+  // Notify internal team of revision request
+  try {
+    const [client] = await database.select().from(clients).where(eq(clients.id, strategy.clientId)).limit(1);
+    if (client) {
+      const { sendStrategyReadyForInternalReviewEmail } = await import("@getpostflow/notifications");
+      const { orgMemberships, users } = await import("@getpostflow/db");
+      const team = await database
+        .select({ userId: orgMemberships.userId })
+        .from(orgMemberships)
+        .where(eq(orgMemberships.orgId, client.orgId));
+      const userIds = team.map((t) => t.userId);
+      if (userIds.length > 0) {
+        const userRows = await database.select({ email: users.email }).from(users).where(eq(users.id, userIds[0]));
+        for (const u of userRows) {
+          if (u.email) {
+            const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+            await sendStrategyReadyForInternalReviewEmail({
+              to: u.email,
+              clientName: client.name,
+              reviewUrl: `${appUrl}/dashboard/clients/${client.id}/strategy/review`,
+            }).catch(() => {});
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.error("[clientRequestChanges] Notification failed:", err);
+  }
+
   return { success: true };
 }
 
 // ─── Send magic link to client ────────────────────────────────────────────────
 
 export async function sendStrategyMagicLink(clientId: string, email: string) {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
+  const { dbUserId, isAdmin, orgId } = await requireAuthAndRole();
+  if (!isAdmin) {
+    await enforceClientAccess(clientId, orgId, isAdmin, dbUserId);
+  }
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
@@ -454,8 +565,10 @@ export async function sendStrategyMagicLink(clientId: string, email: string) {
 // ─── Generate portal test link for dashboard ──────────────────────────────────
 
 export async function generatePortalTestLink(clientId: string): Promise<{ url: string }> {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
+  const { dbUserId, isAdmin, orgId } = await requireAuthAndRole();
+  if (!isAdmin) {
+    await enforceClientAccess(clientId, orgId, isAdmin, dbUserId);
+  }
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   const url = `${appUrl}/api/portal/test-token?clientId=${encodeURIComponent(clientId)}`;

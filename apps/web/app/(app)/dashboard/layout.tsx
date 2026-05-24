@@ -11,11 +11,12 @@ export default async function DashboardLayout({
   if (!userId) redirect("/sign-in");
 
   let clientList: { id: string; name: string }[] = [];
+  let userRole: string | null = null;
 
   // Resolve the org for this user and fetch the client list for the sidebar.
   try {
-    const { createDb, users, orgMemberships, clients, orgs } = await import("@getpostflow/db");
-    const { eq, inArray } = await import("drizzle-orm");
+    const { createDb, users, orgMemberships, clients, orgs, clientAssignments } = await import("@getpostflow/db");
+    const { eq, inArray, and } = await import("drizzle-orm");
     const db = createDb();
 
     let resolvedOrgId: string | null = null;
@@ -45,7 +46,7 @@ export default async function DashboardLayout({
     if (!resolvedOrgId) {
       const [user] = await db.select({ id: users.id }).from(users).where(eq(users.clerkUserId, userId)).limit(1);
       if (user) {
-        const memberships = await db.select({ orgId: orgMemberships.orgId }).from(orgMemberships).where(eq(orgMemberships.userId, user.id));
+        const memberships = await db.select({ orgId: orgMemberships.orgId, role: orgMemberships.role }).from(orgMemberships).where(eq(orgMemberships.userId, user.id));
         if (memberships.length === 0) {
           return <NoOrgScreen />;
         }
@@ -53,14 +54,47 @@ export default async function DashboardLayout({
         const orgRows = await db.select({ id: orgs.id, clerkOrgId: orgs.clerkOrgId }).from(orgs).where(inArray(orgs.id, orgIds));
         const preferred = orgRows.find((o) => o.clerkOrgId?.startsWith("org_")) ?? orgRows[0];
         if (preferred) resolvedOrgId = preferred.id;
+
+        // Determine role for RBAC filtering
+        const membership = memberships.find((m) => m.orgId === resolvedOrgId);
+        userRole = membership?.role ?? null;
+      }
+    } else {
+      // Resolve role when orgId is known
+      const [user] = await db.select({ id: users.id }).from(users).where(eq(users.clerkUserId, userId)).limit(1);
+      if (user) {
+        const [membership] = await db
+          .select({ role: orgMemberships.role })
+          .from(orgMemberships)
+          .where(and(eq(orgMemberships.orgId, resolvedOrgId), eq(orgMemberships.userId, user.id)))
+          .limit(1);
+        userRole = membership?.role ?? null;
       }
     }
 
     if (resolvedOrgId) {
-      clientList = await db
-        .select({ id: clients.id, name: clients.name })
-        .from(clients)
-        .where(eq(clients.orgId, resolvedOrgId));
+      const isAdmin = userRole === "org_owner" || userRole === "org_admin";
+      if (isAdmin) {
+        clientList = await db
+          .select({ id: clients.id, name: clients.name })
+          .from(clients)
+          .where(eq(clients.orgId, resolvedOrgId));
+      } else {
+        // Employees: restrict to assigned clients
+        const assignments = await db
+          .select({ clientId: clientAssignments.clientId })
+          .from(clientAssignments)
+          .where(and(eq(clientAssignments.orgId, resolvedOrgId), eq(clientAssignments.userId, userId)));
+        const assignedClientIds = assignments.map((a) => a.clientId);
+        if (assignedClientIds.length > 0) {
+          clientList = await db
+            .select({ id: clients.id, name: clients.name })
+            .from(clients)
+            .where(and(eq(clients.orgId, resolvedOrgId), inArray(clients.id, assignedClientIds)));
+        } else {
+          clientList = [];
+        }
+      }
     }
   } catch {
     // DB check failed — still render the shell; page-level guards will catch missing data
