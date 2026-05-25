@@ -3,7 +3,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { createDb } from "@getpostflow/db";
-import { generateBrandStrategy } from "@getpostflow/ai";
+import { generateBrandStrategy, generateBrandStrategyViaManus } from "@getpostflow/ai";
 
 const db = () => createDb(process.env.DATABASE_URL!);
 
@@ -183,9 +183,9 @@ export async function submitIntake(clientId: string, payload: Record<string, unk
     .set({ status: "ai_drafting" })
     .where(eq(clients.id, clientId));
 
-  // Generate AI brand strategy
+  // Generate AI brand strategy via Manus (with fallback to OpenAI/Anthropic)
   try {
-    const draft = await generateBrandStrategy(payload as unknown as Parameters<typeof generateBrandStrategy>[0]);
+    const draft = await generateBrandStrategyViaManus(payload as Record<string, unknown>);
 
     // Store draft
     await database.insert(clientBrandStrategies).values({
@@ -198,6 +198,7 @@ export async function submitIntake(clientId: string, payload: Record<string, unk
       aiMetadata: {
         generatedAt: now.toISOString(),
         stubMode: process.env.AI_STUB_MODE === "true",
+        engine: process.env.MANUS_API_KEY ? "manus" : "openai",
       },
     });
 
