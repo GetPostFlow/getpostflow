@@ -1,7 +1,7 @@
-import { db } from "@getpostflow/db";
+import { createDb } from "@getpostflow/db";
 import { and, eq, gte, lte } from "drizzle-orm";
 import { contentTable } from "@getpostflow/db/schema";
-import { getOrgFromAuth } from "@getpostflow/auth/server";
+import { auth } from "@getpostflow/auth";
 import { redirect } from "next/navigation";
 
 export const metadata = {
@@ -10,9 +10,10 @@ export const metadata = {
 };
 
 export default async function ContentCalendarPage() {
-  const org = await getOrgFromAuth();
-  if (!org) redirect("/");
+  const { orgId } = await auth();
+  if (!orgId) redirect("/");
 
+  const db = createDb();
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
@@ -22,7 +23,7 @@ export default async function ContentCalendarPage() {
     .from(contentTable)
     .where(
       and(
-        eq(contentTable.orgId, org.id),
+        eq(contentTable.orgId, orgId),
         gte(contentTable.scheduledAt, monthStart),
         lte(contentTable.scheduledAt, monthEnd)
       )
@@ -30,13 +31,13 @@ export default async function ContentCalendarPage() {
     .orderBy(contentTable.scheduledAt);
 
   const contentByDate = scheduledContent.reduce(
-    (acc, content) => {
+    (acc: any, content: any) => {
       const date = content.scheduledAt?.toISOString().split("T")[0] || "unscheduled";
       if (!acc[date]) acc[date] = [];
       acc[date].push(content);
       return acc;
     },
-    {} as Record<string, typeof scheduledContent>
+    {} as Record<string, any[]>
   );
 
   return (
@@ -59,14 +60,14 @@ export default async function ContentCalendarPage() {
             .map(([date, contents]) => (
               <div key={date} className="rounded-lg border border-border bg-card p-4">
                 <h3 className="font-semibold mb-3">
-                  {new Date(date).toLocaleDateString("en-US", {
+                  {date === "unscheduled" ? "Unscheduled" : new Date(date).toLocaleDateString("en-US", {
                     weekday: "long",
                     month: "long",
                     day: "numeric",
                   })}
                 </h3>
                 <div className="space-y-2">
-                  {((contents as any[]).map((content: any) => (
+                  {(contents as any[]).map((content: any) => (
                     <div
                       key={content.id}
                       className="flex items-center justify-between p-3 bg-secondary rounded-md"
