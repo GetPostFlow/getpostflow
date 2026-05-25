@@ -1,35 +1,63 @@
-import { createDb } from "@getpostflow/db";
-import { clients, orgSubscriptions, contentItems } from "@getpostflow/db";
-import { eq, sql, desc } from "drizzle-orm";
-import { auth, currentUser } from "@getpostflow/auth";
+import { createDb, clients, contentItems, orgSubscriptions } from "@getpostflow/db";
+import { eq, and, desc, sql } from "drizzle-orm";
+import { requireOrgAuth } from "@/lib/auth-org";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 
 export default async function DashboardPage() {
-  const { orgId } = await auth();
-  const user = await currentUser();
-  if (!orgId) redirect("/sign-in");
+  const { orgRow } = await requireOrgAuth();
+  if (!orgRow) redirect("/sign-in");
 
   const db = createDb();
 
-  // Fetch summary metrics
-  const clientsCount = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(clients)
-    .where(eq(clients.clerkOrgId, orgId))
-    .then((r) => r[0]?.count ?? 0);
+  // 1. Top Row: KPI Cards
+  const [clientCount, pendingApprovals, activeSubs] = await Promise.all([
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(clients)
+      .where(eq(clients.orgId, orgRow.id))
+      .then((r) => Number(r[0].count)),
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(contentItems)
+      .where(
+        and(
+          eq(contentItems.orgId, orgRow.id),
+          eq(contentItems.status, "pending_review")
+        )
+      )
+      .then((r) => Number(r[0].count)),
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(orgSubscriptions)
+      .where(
+        and(
+          eq(orgSubscriptions.orgId, orgRow.id),
+          eq(orgSubscriptions.status, "active")
+        )
+      )
+      .then((r) => Number(r[0].count)),
+  ]);
 
-  const pendingApprovals = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(contentItems)
-    .where(and(eq(contentItems.clerkOrgId, orgId), eq(contentItems.status, "pending_approval")))
-    .then((r) => r[0]?.count ?? 0)
-    .catch(() => 0);
-
+  // 2. Middle Row: Recent Clients
   const recentClients = await db
     .select()
     .from(clients)
-    .where(eq(clients.clerkOrgId, orgId))
+    .where(eq(clients.orgId, orgRow.id))
     .orderBy(desc(clients.createdAt))
+    .limit(5);
+
+  // 3. Bottom Row: Urgent Action Items
+  const urgentActions = await db
+    .select()
+    .from(contentItems)
+    .where(
+      and(
+        eq(contentItems.orgId, orgRow.id),
+        eq(contentItems.status, "pending_review")
+      )
+    )
+    .orderBy(desc(contentItems.createdAt))
     .limit(5);
 
   return (
@@ -37,57 +65,77 @@ export default async function DashboardPage() {
       <div>
         <h1 className="text-2xl font-bold">Agency Overview</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Welcome back, {user?.firstName}. Here's what's happening across your clients.
+          Real-time performance and action items for your agency.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="rounded-xl border border-border bg-card p-6">
-          <p className="text-sm font-medium text-muted-foreground">Total Clients</p>
-          <p className="text-3xl font-bold mt-2">{clientsCount}</p>
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="p-6 bg-card border border-border rounded-xl shadow-sm">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Clients</p>
+          <p className="text-3xl font-bold mt-2">{clientCount}</p>
         </div>
-        <div className="rounded-xl border border-border bg-card p-6">
-          <p className="text-sm font-medium text-muted-foreground">Pending Approvals</p>
-          <p className="text-3xl font-bold mt-2">{pendingApprovals}</p>
+        <div className="p-6 bg-card border border-border rounded-xl shadow-sm">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Pending Approvals</p>
+          <p className="text-3xl font-bold mt-2 text-primary">{pendingApprovals}</p>
         </div>
-        <div className="rounded-xl border border-border bg-card p-6">
-          <p className="text-sm font-medium text-muted-foreground">Engagement Rate</p>
-          <p className="text-3xl font-bold mt-2">4.8%</p>
+        <div className="p-6 bg-card border border-border rounded-xl shadow-sm">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Active Subscriptions</p>
+          <p className="text-3xl font-bold mt-2">{activeSubs}</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 rounded-xl border border-border bg-card overflow-hidden">
-          <div className="p-6 border-b border-border flex justify-between items-center">
-            <h2 className="font-semibold">Recent Clients</h2>
-            <a href="/dashboard/clients" className="text-sm text-primary hover:underline">
-              View all
-            </a>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Recent Clients */}
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Recent Clients</h2>
+            <Link href="/dashboard/clients" className="text-xs text-primary hover:underline">View All</Link>
           </div>
-          <div className="divide-y divide-border">
-            {recentClients.map((client: any) => (
-              <div key={client.id} className="p-4 flex items-center justify-between hover:bg-secondary/50 transition">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center font-bold">
-                    {client.name.charAt(0)}
-                  </div>
+          <div className="space-y-3">
+            {recentClients.length === 0 ? (
+              <p className="text-sm text-muted-foreground italic">No clients found.</p>
+            ) : (
+              recentClients.map((client) => (
+                <div key={client.id} className="flex items-center justify-between p-4 bg-secondary/20 rounded-lg border border-border/50">
                   <div>
-                    <p className="font-medium">{client.name}</p>
-                    <p className="text-xs text-muted-foreground">{client.industry}</p>
+                    <p className="text-sm font-medium">{client.name}</p>
+                    <p className="text-xs text-muted-foreground capitalize">{client.status.replace("_", " ")}</p>
                   </div>
+                  <Link href={`/dashboard/clients/${client.id}`} className="text-xs font-medium px-3 py-1 bg-background border border-border rounded-md hover:bg-secondary/50">
+                    Manage
+                  </Link>
                 </div>
-                <a href={`/dashboard/clients/${client.id}`} className="text-xs font-medium border border-border px-3 py-1 rounded hover:bg-secondary">
-                  Manage
-                </a>
-              </div>
-            ))}
+              ))
+            )}
           </div>
-        </div>
+        </section>
+
+        {/* Urgent Actions */}
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Urgent Actions</h2>
+            <Link href="/dashboard/approvals" className="text-xs text-primary hover:underline">View All</Link>
+          </div>
+          <div className="space-y-3">
+            {urgentActions.length === 0 ? (
+              <p className="text-sm text-muted-foreground italic">All caught up! No urgent actions.</p>
+            ) : (
+              urgentActions.map((action) => (
+                <div key={action.id} className="flex items-center justify-between p-4 bg-primary/5 border border-primary/10 rounded-lg">
+                  <div>
+                    <p className="text-sm font-medium">{action.title || "Content Review"}</p>
+                    <p className="text-xs text-muted-foreground">Platform: {action.platform} • Pending Approval</p>
+                  </div>
+                  <Link href={`/dashboard/clients/${action.clientId}/content`} className="text-xs font-medium px-3 py-1 bg-primary text-primary-foreground rounded-md hover:opacity-90">
+                    Review
+                  </Link>
+                </div>
+              ))
+            )}
+          </div>
+        </section>
       </div>
     </div>
   );
-}
-
-function and(...args: any[]) {
-  return args.filter(Boolean);
 }
