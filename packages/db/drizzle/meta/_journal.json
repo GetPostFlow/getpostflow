@@ -8,6 +8,13 @@
       "when": 1779459465596,
       "tag": "0000_common_star_brand",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1779716941400,
+      "tag": "0001_blueprint_rebuild_phases_1_to_8",
+      "breakpoints": true
     }
   ]
 }
