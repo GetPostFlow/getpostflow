@@ -1,8 +1,8 @@
 import { createDb } from "@getpostflow/db";
 import { eq } from "drizzle-orm";
-import { subscriptions } from "@getpostflow/db";
-import { getPortalClient } from "@getpostflow/auth/server";
+import { clients, orgSubscriptions } from "@getpostflow/db";
 import { redirect } from "next/navigation";
+import { auth } from "@getpostflow/auth";
 
 export default async function PortalSettingsPage({
   params,
@@ -10,15 +10,23 @@ export default async function PortalSettingsPage({
   params: Promise<{ orgSlug: string; clientSlug: string }>;
 }) {
   const { orgSlug, clientSlug } = await params;
-  const client = await getPortalClient(orgSlug, clientSlug);
-  if (!client) redirect("/portal/login");
+  const { orgId } = await auth();
+  if (!orgId) redirect("/");
 
   const db = createDb();
+  
+  const [client] = await db
+    .select()
+    .from(clients)
+    .where(eq(clients.slug, clientSlug))
+    .limit(1);
+
+  if (!client) redirect("/portal/login");
 
   const [subscription] = await db
     .select()
-    .from(subscriptions)
-    .where(eq(subscriptions.orgId, client.orgId))
+    .from(orgSubscriptions)
+    .where(eq(orgSubscriptions.orgId, client.orgId))
     .limit(1);
 
   const refundDeadline = subscription?.createdAt 

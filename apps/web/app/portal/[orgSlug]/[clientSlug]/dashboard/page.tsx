@@ -1,8 +1,8 @@
 import { createDb } from "@getpostflow/db";
 import { eq, and, desc } from "drizzle-orm";
 import { clients, contentItems, brandProfiles } from "@getpostflow/db";
-import { getPortalClient } from "@getpostflow/auth/server";
 import { redirect } from "next/navigation";
+import { auth } from "@getpostflow/auth";
 
 export default async function PortalDashboardPage({
   params,
@@ -10,10 +10,18 @@ export default async function PortalDashboardPage({
   params: Promise<{ orgSlug: string; clientSlug: string }>;
 }) {
   const { orgSlug, clientSlug } = await params;
-  const client = await getPortalClient(orgSlug, clientSlug);
-  if (!client) redirect("/portal/login");
+  const { orgId } = await auth();
+  if (!orgId) redirect("/");
 
   const db = createDb();
+  
+  const [client] = await db
+    .select()
+    .from(clients)
+    .where(eq(clients.slug, clientSlug))
+    .limit(1);
+
+  if (!client) redirect("/portal/login");
 
   // Load dashboard data
   const [content, strategies] = await Promise.all([

@@ -1,5 +1,5 @@
 import { createDb, clients, brandProfiles, contentItems } from "@getpostflow/db";
-import { eq, and, or } from "drizzle-orm";
+import { eq, and, or, sql } from "drizzle-orm";
 import { requireOrgAuth } from "@/lib/auth-org";
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -27,8 +27,7 @@ export default async function ApprovalsDashboardPage() {
     .from(brandProfiles)
     .where(
       and(
-        eq(brandProfiles.clientId, sql`any(select id from clients where org_id = ${orgRow.id})`),
-        eq(brandProfiles.status, "strategist_pending")
+        eq(brandProfiles.clientId, sql`any(select id from clients where org_id = ${orgRow.id})`)
       )
     );
 
@@ -82,5 +81,3 @@ export default async function ApprovalsDashboardPage() {
     </div>
   );
 }
-
-import { sql } from "drizzle-orm";
