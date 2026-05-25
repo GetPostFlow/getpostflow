@@ -235,6 +235,12 @@ export const socialAccounts = pgTable("social_accounts", {
   platform: varchar("platform", { length: 64 }).notNull(),
   accountName: varchar("account_name", { length: 255 }).notNull(),
   externalAccountId: varchar("external_account_id", { length: 255 }).notNull(),
+  /** Encrypted OAuth tokens (access + refresh) stored as JSON */
+  encryptedTokens: jsonb("encrypted_tokens").notNull().default({}),
+  /** Token expiry timestamp */
+  tokenExpiresAt: timestamp("token_expires_at", { withTimezone: true }),
+  /** Last successful sync / health check timestamp */
+  lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
 });
@@ -247,6 +253,42 @@ export const brandProfiles = pgTable("brand_profiles", {
   summary: text("summary").notNull(),
   locales: jsonb("locales").notNull().default({}),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+});
+
+export const brandKits = pgTable("brand_kits", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  clientId: uuid("client_id").notNull().unique(),
+  /** Logo asset URLs by format: { png?: string, svg?: string, jpg?: string } */
+  logos: jsonb("logos").notNull().default({}),
+  /** Color palette: { primary, secondary, accent, background?, text? } */
+  colors: jsonb("colors").notNull().default({}),
+  /** Typography: { headingFont, bodyFont } */
+  typography: jsonb("typography").notNull().default({}),
+  /** Freeform markdown style guide */
+  styleGuide: text("style_guide"),
+  /** Voice/tone guidelines */
+  voiceTone: text("voice_tone"),
+  /** Do's and Don'ts: { dos: string[], donts: string[] } */
+  dosAndDonts: jsonb("dos_and_donts").notNull().default({ dos: [], donts: [] }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull()
+});
+
+export const contentTemplates = pgTable("content_templates", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  clientId: uuid("client_id").notNull(),
+  orgId: uuid("org_id").notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  /** post | carousel | reel | story | thread | ad | video_script */
+  contentType: varchar("content_type", { length: 64 }).notNull().default("post"),
+  /** Template body with {{variable}} placeholders */
+  body: text("body").notNull(),
+  /** JSON array of variable names extracted from body */
+  variables: jsonb("variables").notNull().default([]),
+  tags: jsonb("tags").notNull().default([]),
+  useCount: integer("use_count").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull()
 });
 
 export const strategies = pgTable("strategies", {
@@ -369,6 +411,14 @@ export const inboxAssignments = pgTable("inbox_assignments", {
   userId: uuid("user_id").notNull(),
   assignedAt: timestamp("assigned_at", { withTimezone: true }).defaultNow().notNull(),
   resolvedAt: timestamp("resolved_at", { withTimezone: true })
+});
+
+export const conversationNotes = pgTable("conversation_notes", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  conversationId: uuid("conversation_id").notNull(),
+  userId: uuid("user_id").notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
 });
 
 // ── Community management ──────────────────────────────────────────────────────

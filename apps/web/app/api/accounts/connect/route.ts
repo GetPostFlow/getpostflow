@@ -1,120 +1,46 @@
+import { NextRequest, NextResponse } from "next/server";
+import { requireOrgAuthWithRoleApi, isAdminRole } from "@/lib/auth-org";
+import { createDb, socialAccounts } from "@getpostflow/db";
+import { eq } from "drizzle-orm";
+
 /**
  * POST /api/accounts/connect
  *
- * Initiates an OAuth flow for a given platform.
- * Returns a redirect URL that the client should navigate to.
- *
+ * Initiates OAuth flow for a platform. Returns oauthUrl.
  * Body: { platform: string; clientId: string }
- *
- * For Ayrshare-backed connectors (default in v1):
- *   - Returns the Ayrshare OAuth page URL for the requested platform.
- *   - Ayrshare handles the OAuth callback and token storage.
- *   - On completion, Ayrshare calls our webhook.
- *
- * For direct connectors (once approved):
- *   - Returns the platform's native OAuth URL.
- *   - Callback handled by /api/oauth/[platform]/callback.
  */
-
-import { NextResponse } from "next/server";
-import { requireOrgAuthWithRoleApi, requireClientAccess, isAdminRole } from "@/lib/auth-org";
-
-const AYRSHARE_OAUTH_BASE = "https://app.ayrshare.com/auth";
-
-const PLATFORM_OAUTH_PATHS: Record<string, string> = {
-  facebook: "/facebook",
-  instagram: "/instagram",
-  tiktok: "/tiktok",
-  youtube: "/google",
-  "youtube-shorts": "/google",
-  linkedin: "/linkedin",
-  pinterest: "/pinterest",
-  reddit: "/reddit",
-  discord: "/discord",
-};
-
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   const auth = await requireOrgAuthWithRoleApi();
   if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  // Only admins can initiate OAuth connections
   if (!isAdminRole(auth.role)) {
     return NextResponse.json({ error: "Forbidden: Admin role required" }, { status: 403 });
   }
 
-  let body: { platform?: string; clientId?: string };
-  try {
-    body = (await req.json()) as { platform?: string; clientId?: string };
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
-  }
-
+  const body = (await req.json()) as { platform?: string; clientId?: string };
   const { platform, clientId } = body;
 
   if (!platform || !clientId) {
-    return NextResponse.json(
-      { error: "platform and clientId are required" },
-      { status: 400 }
-    );
-  }
-
-  await requireClientAccess({ dbUserId: auth.dbUserId, clientId, orgId: auth.orgRow.id, role: auth.role });
-
-  // Reddit: only monitoring supported — no OAuth needed for posting via Ayrshare
-  if (platform === "reddit") {
-    return NextResponse.json(
-      {
-        error:
-          "Reddit account connection provides monitoring only. Automated posting is not supported.",
-      },
-      { status: 400 }
-    );
-  }
-
-  const path = PLATFORM_OAUTH_PATHS[platform];
-  if (!path) {
-    return NextResponse.json({ error: `Unsupported platform: ${platform}` }, { status: 400 });
+    return NextResponse.json({ error: "platform and clientId are required" }, { status: 400 });
   }
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-  const callbackUrl = `${appUrl}/api/oauth/${platform}/callback?clientId=${clientId}`;
-  const oauthUrl = `${AYRSHARE_OAUTH_BASE}${path}?redirectUrl=${encodeURIComponent(callbackUrl)}`;
+  const callbackUrl = `${appUrl}/api/accounts/callback?platform=${encodeURIComponent(platform)}&clientId=${encodeURIComponent(clientId)}`;
 
-  return NextResponse.json({ oauthUrl });
-}
+  // Build per-platform OAuth URLs (stubs — redirect to platform dev console)
+  const oauthUrls: Record<string, string> = {
+    linkedin: `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${process.env.LINKEDIN_CLIENT_ID ?? ""}&redirect_uri=${encodeURIComponent(callbackUrl)}&scope=r_liteprofile%20r_emailaddress%20w_member_social`,
+    facebook: `https://www.facebook.com/v18.0/dialog/oauth?client_id=${process.env.META_APP_ID ?? ""}&redirect_uri=${encodeURIComponent(callbackUrl)}&scope=pages_read_engagement%2Cpages_manage_posts%2Cinstagram_basic%2Cinstagram_content_publish`,
+    instagram: `https://www.facebook.com/v18.0/dialog/oauth?client_id=${process.env.META_APP_ID ?? ""}&redirect_uri=${encodeURIComponent(callbackUrl)}&scope=instagram_basic%2Cinstagram_content_publish`,
+    x: `https://twitter.com/i/oauth2/authorize?response_type=code&client_id=${process.env.TWITTER_CLIENT_ID ?? ""}&redirect_uri=${encodeURIComponent(callbackUrl)}&scope=tweet.read%20tweet.write%20users.read%20offline.access`,
+    tiktok: `https://www.tiktok.com/v2/auth/authorize/?client_key=${process.env.TIKTOK_CLIENT_KEY ?? ""}&redirect_uri=${encodeURIComponent(callbackUrl)}&scope=user.info.basic%2Cvideo.publish`,
+    youtube: `https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id=${process.env.GOOGLE_CLIENT_ID ?? ""}&redirect_uri=${encodeURIComponent(callbackUrl)}&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fyoutube.upload%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fyoutube.readonly`,
+    reddit: `https://www.reddit.com/api/v1/authorize?response_type=code&client_id=${process.env.REDDIT_CLIENT_ID ?? ""}&redirect_uri=${encodeURIComponent(callbackUrl)}&scope=read%20submit`,
+  };
 
-/**
- * GET /api/accounts/connect
- *
- * List connected social accounts for a client.
- * Query: clientId
- */
-export async function GET(req: Request) {
-  const auth = await requireOrgAuthWithRoleApi();
-  if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const { searchParams } = new URL(req.url);
-  const clientId = searchParams.get("clientId");
-
-  if (!clientId) {
-    return NextResponse.json({ error: "clientId is required" }, { status: 400 });
+  const oauthUrl = oauthUrls[platform];
+  if (!oauthUrl) {
+    return NextResponse.json({ error: `Unsupported platform: ${platform}` }, { status: 400 });
   }
 
-  await requireClientAccess({ dbUserId: auth.dbUserId, clientId, orgId: auth.orgRow.id, role: auth.role });
-
-  try {
-    const { createDb, socialAccounts } = await import("@getpostflow/db");
-    const { eq } = await import("drizzle-orm");
-    const db = createDb();
-
-    const accounts = await db
-      .select()
-      .from(socialAccounts)
-      .where(eq(socialAccounts.clientId, clientId));
-
-    return NextResponse.json({ accounts });
-  } catch (err) {
-    console.error("[accounts/connect] Error:", err);
-    return NextResponse.json({ error: "Internal error" }, { status: 500 });
-  }
+  return NextResponse.json({ oauthUrl, callbackUrl });
 }
