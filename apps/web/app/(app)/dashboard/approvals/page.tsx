@@ -1,154 +1,144 @@
-import { db } from "@getpostflow/db";
-import { eq } from "drizzle-orm";
-import {
-  intakeFormTable,
-  brandStrategyTable,
-  contentTable,
-} from "@getpostflow/db/schema";
-import { getOrgFromAuth } from "@getpostflow/auth/server";
+import { createDb } from "@getpostflow/db";
+import { eq, and, or } from "drizzle-orm";
+import { clients, brandProfiles, contentItems } from "@getpostflow/db";
+import { auth } from "@getpostflow/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 
 export const metadata = {
-  title: "Approvals",
-  description: "View all pending approvals across your agency",
+  title: "Approvals Dashboard",
+  description: "Review and approve client intake, strategies, and content",
 };
 
-export default async function ApprovalsPage() {
-  const org = await getOrgFromAuth();
-  if (!org) redirect("/");
+export default async function ApprovalsDashboardPage() {
+  const { orgId } = await auth();
+  if (!orgId) redirect("/");
 
-  const [intakeForms, strategies, content] = await Promise.all([
-    db
-      .select()
-      .from(intakeFormTable)
-      .where(eq(intakeFormTable.orgId, org.id)),
-    db
-      .select()
-      .from(brandStrategyTable)
-      .where(eq(brandStrategyTable.orgId, org.id)),
-    db
-      .select()
-      .from(contentTable)
-      .where(eq(contentTable.orgId, org.id)),
-  ]);
+  const db = createDb();
 
-  const pendingIntakes = intakeForms.filter((f) => f.status === "pending");
-  const pendingStrategies = strategies.filter((s) => s.status === "pending");
-  const pendingContent = content.filter((c) => c.status === "pending");
+  // 1. Pending Intake Reviews (Clients with status 'intake_pending' or 'ai_drafting')
+  const pendingIntakes = await db
+    .select()
+    .from(clients)
+    .where(
+      and(
+        eq(clients.orgId, orgId as string),
+        or(eq(clients.status, "intake_pending"), eq(clients.status, "ai_drafting"))
+      )
+    );
 
-  const totalPending = pendingIntakes.length + pendingStrategies.length + pendingContent.length;
+  // 2. Pending Strategy Reviews (Brand profiles pending strategist review)
+  const pendingStrategies = await db
+    .select()
+    .from(brandProfiles)
+    .where(
+      and(
+        eq(brandProfiles.orgId, orgId as string),
+        eq(brandProfiles.status, "strategist_pending")
+      )
+    );
+
+  // 3. Pending Client Approvals (Content items waiting for client review)
+  const pendingClientApprovals = await db
+    .select()
+    .from(contentItems)
+    .where(
+      and(
+        eq(contentItems.orgId, orgId as string),
+        eq(contentItems.status, "pending_review")
+      )
+    );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold">Approvals</h1>
+        <h1 className="text-2xl font-bold">Approvals Dashboard</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          {totalPending > 0
-            ? `${totalPending} items awaiting approval`
-            : "All approvals are up to date"}
+          Review and approve items across all your clients
         </p>
       </div>
 
-      <div className="grid gap-6">
-        {/* Intake Forms Pending Review */}
-        <div className="rounded-lg border border-border bg-card p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">Intake Forms Pending Review</h2>
-            <span className="text-sm px-2 py-1 rounded-full bg-yellow-100 text-yellow-800">
+      <div className="grid gap-8">
+        {/* Intake Reviews */}
+        <section className="space-y-4">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            Intake Reviews
+            <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full">
               {pendingIntakes.length}
             </span>
-          </div>
-          {pendingIntakes.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No pending intake forms</p>
-          ) : (
-            <div className="space-y-2">
-              {pendingIntakes.map((intake) => (
-                <Link
-                  key={intake.id}
-                  href={`/dashboard/intake-reviews`}
-                  className="flex items-center justify-between p-3 bg-secondary rounded-md hover:bg-secondary/80 transition"
-                >
+          </h2>
+          <div className="grid gap-3">
+            {pendingIntakes.length === 0 ? (
+              <p className="text-sm text-muted-foreground italic">No pending intake reviews</p>
+            ) : (
+              pendingIntakes.map((client: any) => (
+                <div key={client.id} className="flex items-center justify-between p-4 bg-card border border-border rounded-lg">
                   <div>
-                    <p className="text-sm font-medium">Brand Intake Form</p>
-                    <p className="text-xs text-muted-foreground">
-                      Submitted {new Date(intake.createdAt).toLocaleDateString()}
-                    </p>
+                    <p className="font-medium">{client.name}</p>
+                    <p className="text-xs text-muted-foreground">Status: {client.status}</p>
                   </div>
-                  <span className="text-xs px-2 py-1 rounded bg-yellow-100 text-yellow-800">
+                  <Link href={`/dashboard/clients/${client.id}/intake`} className="text-xs font-medium px-3 py-1 bg-primary text-primary-foreground rounded-md hover:opacity-90">
                     Review
-                  </span>
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
+                  </Link>
+                </div>
+              ))
+            )}
+          </div>
+        </section>
 
-        {/* Strategies Pending Review */}
-        <div className="rounded-lg border border-border bg-card p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">Strategies Pending Review</h2>
-            <span className="text-sm px-2 py-1 rounded-full bg-blue-100 text-blue-800">
+        {/* Strategy Reviews */}
+        <section className="space-y-4">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            Strategy Reviews
+            <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full">
               {pendingStrategies.length}
             </span>
-          </div>
-          {pendingStrategies.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No pending strategies</p>
-          ) : (
-            <div className="space-y-2">
-              {pendingStrategies.map((strategy) => (
-                <Link
-                  key={strategy.id}
-                  href={`/dashboard/strategy-reviews`}
-                  className="flex items-center justify-between p-3 bg-secondary rounded-md hover:bg-secondary/80 transition"
-                >
+          </h2>
+          <div className="grid gap-3">
+            {pendingStrategies.length === 0 ? (
+              <p className="text-sm text-muted-foreground italic">No pending strategy reviews</p>
+            ) : (
+              pendingStrategies.map((strategy: any) => (
+                <div key={strategy.id} className="flex items-center justify-between p-4 bg-card border border-border rounded-lg">
                   <div>
-                    <p className="text-sm font-medium">Brand Strategy</p>
-                    <p className="text-xs text-muted-foreground">
-                      Created {new Date(strategy.createdAt).toLocaleDateString()}
-                    </p>
+                    <p className="font-medium">Brand Strategy</p>
+                    <p className="text-xs text-muted-foreground">Updated: {new Date(strategy.updatedAt).toLocaleDateString()}</p>
                   </div>
-                  <span className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800">
+                  <Link href={`/dashboard/clients/${strategy.clientId}/strategy`} className="text-xs font-medium px-3 py-1 bg-primary text-primary-foreground rounded-md hover:opacity-90">
                     Review
-                  </span>
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Content Pending Client Approval */}
-        <div className="rounded-lg border border-border bg-card p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">Content Pending Client Approval</h2>
-            <span className="text-sm px-2 py-1 rounded-full bg-green-100 text-green-800">
-              {pendingContent.length}
-            </span>
+                  </Link>
+                </div>
+              ))
+            )}
           </div>
-          {pendingContent.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No pending content approvals</p>
-          ) : (
-            <div className="space-y-2">
-              {pendingContent.map((item) => (
-                <Link
-                  key={item.id}
-                  href={`/dashboard/client-approvals`}
-                  className="flex items-center justify-between p-3 bg-secondary rounded-md hover:bg-secondary/80 transition"
-                >
+        </section>
+
+        {/* Client Approvals */}
+        <section className="space-y-4">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            Waiting for Client
+            <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full">
+              {pendingClientApprovals.length}
+            </span>
+          </h2>
+          <div className="grid gap-3">
+            {pendingClientApprovals.length === 0 ? (
+              <p className="text-sm text-muted-foreground italic">No content waiting for client approval</p>
+            ) : (
+              pendingClientApprovals.map((content: any) => (
+                <div key={content.id} className="flex items-center justify-between p-4 bg-card border border-border rounded-lg">
                   <div>
-                    <p className="text-sm font-medium">{item.title}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Scheduled {new Date(item.scheduledAt || new Date()).toLocaleDateString()}
-                    </p>
+                    <p className="font-medium">{content.title}</p>
+                    <p className="text-xs text-muted-foreground">Platform: {content.platform}</p>
                   </div>
-                  <span className="text-xs px-2 py-1 rounded bg-green-100 text-green-800">
-                    Pending
+                  <span className="text-xs px-2 py-1 bg-secondary text-secondary-foreground rounded">
+                    Pending Client
                   </span>
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
+                </div>
+              ))
+            )}
+          </div>
+        </section>
       </div>
     </div>
   );

@@ -1,130 +1,83 @@
 import { createDb } from "@getpostflow/db";
 import { eq } from "drizzle-orm";
-import { subscriptionTable } from "@getpostflow/db/schema";
+import { subscriptions } from "@getpostflow/db";
 import { getPortalClient } from "@getpostflow/auth/server";
 import { redirect } from "next/navigation";
 
-export const metadata = {
-  title: "Settings",
-  description: "Client portal settings",
-};
-
-export default async function ClientPortalSettings({
+export default async function PortalSettingsPage({
   params,
 }: {
-  params: { orgSlug: string; clientSlug: string };
+  params: Promise<{ orgSlug: string; clientSlug: string }>;
 }) {
-  const client = await getPortalClient();
-  if (!client) redirect("/");
+  const { orgSlug, clientSlug } = await params;
+  const client = await getPortalClient(orgSlug, clientSlug);
+  if (!client) redirect("/portal/login");
 
-  const subscription = await db
+  const db = createDb();
+
+  const [subscription] = await db
     .select()
-    .from(subscriptionTable)
-    .where(eq(subscriptionTable.clientId, client.id))
-    .then((r) => r[0]);
+    .from(subscriptions)
+    .where(eq(subscriptions.orgId, client.orgId))
+    .limit(1);
 
-  const billingDate = subscription?.createdAt
-    ? new Date(subscription.createdAt)
+  const refundDeadline = subscription?.createdAt 
+    ? new Date(new Date(subscription.createdAt).getTime() + 14 * 24 * 60 * 60 * 1000)
     : null;
-  const refundDeadline = billingDate
-    ? new Date(billingDate.getTime() + 14 * 24 * 60 * 60 * 1000)
-    : null;
-  const canRefund =
-    refundDeadline && new Date() < refundDeadline
-      ? true
-      : false;
+  const canRefund = refundDeadline ? new Date() < refundDeadline : false;
 
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="space-y-8 max-w-2xl">
       <div>
         <h1 className="text-2xl font-bold">Settings</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Manage your account and subscription
+          Manage your subscription and account details.
         </p>
       </div>
 
-      {/* Billing Information */}
-      <div className="rounded-lg border border-border bg-card p-6">
-        <h2 className="text-lg font-semibold mb-4">Billing Information</h2>
-        <div className="space-y-4">
-          <div>
-            <p className="text-sm text-muted-foreground">Billing Date</p>
-            <p className="font-medium">
-              {billingDate
-                ? billingDate.toLocaleDateString("en-US", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })
-                : "Not available"}
-            </p>
-          </div>
-
-          <div>
-            <p className="text-sm text-muted-foreground">Subscription Status</p>
-            <p className="font-medium text-green-600">Active</p>
-          </div>
-
-          <div>
-            <p className="text-sm text-muted-foreground">Plan</p>
-            <p className="font-medium">{subscription?.plan || "Standard"}</p>
-          </div>
+      <section className="p-6 bg-card border border-border rounded-xl space-y-6">
+        <div>
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Subscription Plan</h2>
+          <p className="text-lg font-bold mt-2">{subscription?.planCode || "Starter"} Plan</p>
+          <p className="text-sm text-muted-foreground">Status: <span className="text-primary font-medium capitalize">{subscription?.status || "Active"}</span></p>
         </div>
-      </div>
 
-      {/* Refund Policy */}
-      <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-6">
-        <h2 className="text-lg font-semibold mb-3">Refund Policy</h2>
-        <p className="text-sm mb-3">
-          You have 14 days from your billing date to request a refund. After this
-          period, no refunds will be issued.
-        </p>
-        <div className="bg-white rounded p-3 mb-3">
-          <p className="text-xs text-muted-foreground mb-1">Refund Deadline</p>
-          <p className="font-semibold">
-            {refundDeadline
-              ? refundDeadline.toLocaleDateString("en-US", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })
-              : "Not available"}
-          </p>
-          <p className="text-xs text-muted-foreground mt-2">
-            {canRefund
-              ? "You are eligible for a refund"
-              : "Refund period has expired"}
+        <div className="pt-4 border-t border-border">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Billing Period</h2>
+          <p className="text-sm mt-2">
+            Next billing date: <span className="font-medium">{subscription?.currentPeriodEnd ? new Date(subscription.currentPeriodEnd).toLocaleDateString() : "N/A"}</span>
           </p>
         </div>
-      </div>
 
-      {/* Subscription Management */}
-      <div className="rounded-lg border border-border bg-card p-6">
-        <h2 className="text-lg font-semibold mb-4">Subscription Management</h2>
-        <div className="space-y-3">
-          <button className="w-full px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-secondary transition">
+        <div className="pt-4 border-t border-border">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Refund Policy</h2>
+          <p className="text-sm mt-2">
+            {canRefund 
+              ? `You are within the 14-day refund window. Deadline: ${refundDeadline?.toLocaleDateString()}`
+              : "The 14-day refund window has passed."}
+          </p>
+        </div>
+
+        <div className="pt-6 flex gap-3">
+          <button className="px-4 py-2 text-sm font-medium bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/80">
             Downgrade Plan
           </button>
-          <button className="w-full px-4 py-2 border border-red-300 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition">
+          <button className="px-4 py-2 text-sm font-medium border border-border rounded-lg hover:bg-secondary/30">
             Cancel Subscription
           </button>
         </div>
-      </div>
+      </section>
 
-      {/* Contact Support */}
-      <div className="rounded-lg border border-border bg-card p-6">
-        <h2 className="text-lg font-semibold mb-2">Need Help?</h2>
-        <p className="text-sm text-muted-foreground mb-3">
-          For billing inquiries or subscription changes, please contact our support
-          team.
-        </p>
-        <a
-          href={`/portal/${params.orgSlug}/${params.clientSlug}/messages`}
-          className="inline-block px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition"
+      <section className="p-6 bg-secondary/10 border border-secondary/20 rounded-xl">
+        <h2 className="text-sm font-semibold">Need help?</h2>
+        <p className="text-sm text-muted-foreground mt-1">If you have questions about your billing or need to update your account details, please contact our support team.</p>
+        <a 
+          href={`/portal/${orgSlug}/${clientSlug}/messages`}
+          className="inline-block mt-4 text-sm font-medium text-primary hover:underline"
         >
-          Contact Support
+          Open Support Chat
         </a>
-      </div>
+      </section>
     </div>
   );
 }
