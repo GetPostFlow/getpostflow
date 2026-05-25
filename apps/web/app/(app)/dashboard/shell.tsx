@@ -8,7 +8,7 @@ import { TopBar } from "@getpostflow/ui/top-bar";
 import type { NavItem } from "@getpostflow/ui/nav-rail";
 import { ClientSwitcher } from "./_client-switcher";
 import type { ClientOption } from "./_client-switcher";
-import { GlobalSearch } from "./_global-search";
+
 
 const NAV_ITEMS: NavItem[] = [
   {
