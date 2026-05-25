@@ -81,12 +81,13 @@ export function PortalNav({
   orgSlug: string;
   clientSlug: string;
   token: string;
-  active: "strategy" | "content" | "calendar" | "notifications" | "report" | "uploads" | "messages" | "billing";
+  active: "dashboard" | "strategy" | "content" | "calendar" | "notifications" | "report" | "uploads" | "messages" | "billing" | "settings";
 }) {
   const base = `/portal/${orgSlug}/${clientSlug}`;
   const q = `?token=${token}`;
 
   const items = [
+    { id: "dashboard", label: "Dashboard", href: `${base}/dashboard${q}` },
     { id: "strategy", label: "Brand Strategy", href: `${base}/strategy${q}` },
     { id: "content", label: "Content Approval", href: `${base}/content${q}` },
     { id: "calendar", label: "Content Calendar", href: `${base}/calendar${q}` },
@@ -95,6 +96,7 @@ export function PortalNav({
     { id: "notifications", label: "Notifications", href: `${base}/notifications${q}` },
     { id: "report", label: "Monthly Report", href: `${base}/report${q}` },
     { id: "billing", label: "Billing", href: `${base}/billing${q}` },
+    { id: "settings", label: "Settings", href: `${base}/settings${q}` },
   ] as const;
 
   return (
