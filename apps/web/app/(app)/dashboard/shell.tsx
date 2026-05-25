@@ -52,6 +52,26 @@ const NAV_ITEMS: NavItem[] = [
     ),
   },
   {
+    id: "content-calendar",
+    label: "Content Calendar",
+    href: "/dashboard/content-calendar",
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M3 2h1v1H3V2zm0 3h1v1H3V5zm0 3h1v1H3V8zm0 3h1v1H3v-1zm3-6h1v1H6V2zm0 3h1v1H6V5zm0 3h1v1H6V8zm0 3h1v1H6v-1zm3-6h1v1H9V2zm0 3h1v1H9V5zm0 3h1v1H9V8zm0 3h1v1H9v-1zm3-6h1v1h-1V2zm0 3h1v1h-1V5zm0 3h1v1h-1V8zm0 3h1v1h-1v-1zM2 1h12a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1z" />
+      </svg>
+    ),
+  },
+  {
+    id: "content-library",
+    label: "Content Library",
+    href: "/dashboard/content-library",
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M2 2h12a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1zm1 2v8h10V4H3z" />
+      </svg>
+    ),
+  },
+  {
     id: "content-queue",
     label: "Content Queue",
     href: "/dashboard/content-queue",
@@ -138,6 +158,8 @@ function getActiveId(pathname: string): string {
   if (pathname.startsWith("/dashboard/clients")) return "clients";
   if (pathname.startsWith("/dashboard/intake-reviews")) return "intake-reviews";
   if (pathname.startsWith("/dashboard/strategy-reviews")) return "strategy-reviews";
+  if (pathname.startsWith("/dashboard/content-calendar")) return "content-calendar";
+  if (pathname.startsWith("/dashboard/content-library")) return "content-library";
   if (pathname.startsWith("/dashboard/content-queue")) return "content-queue";
   if (pathname.startsWith("/dashboard/client-approvals")) return "client-approvals";
   if (pathname.startsWith("/dashboard/inbox")) return "inbox";
@@ -164,6 +186,8 @@ function getPageTitle(pathname: string): string {
   if (pathname.startsWith("/dashboard/clients")) return "Clients";
   if (pathname.startsWith("/dashboard/intake-reviews")) return "Intake Reviews";
   if (pathname.startsWith("/dashboard/strategy-reviews")) return "Strategy Reviews";
+  if (pathname.startsWith("/dashboard/content-calendar")) return "Content Calendar";
+  if (pathname.startsWith("/dashboard/content-library")) return "Content Library";
   if (pathname.startsWith("/dashboard/content-queue")) return "Content Queue";
   if (pathname.startsWith("/dashboard/client-approvals")) return "Client Approvals";
   if (pathname.startsWith("/dashboard/tasks")) return "Tasks";
