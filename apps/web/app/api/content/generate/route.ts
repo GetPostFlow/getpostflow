@@ -1,4 +1,4 @@
-import { requireOrgAuthApi } from "@/lib/auth-org";
+import { requireOrgAuthWithRoleApi, requireClientAccess } from "@/lib/auth-org";
 import { NextRequest, NextResponse } from "next/server";
 import { createDb } from "@getpostflow/db";
 import {
@@ -22,11 +22,11 @@ import type { SupportedPlatform, ContentType } from "@getpostflow/ai";
  * Creates new content item(s) with AI-generated draft(s).
  */
 export async function POST(req: NextRequest) {
-  const authResult = await requireOrgAuthApi();
-  if (!authResult) {
+  const auth = await requireOrgAuthWithRoleApi();
+  if (!auth) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const { userId, orgRow: org } = authResult;
+  const { dbUserId, orgRow: org, role } = auth;
 
   const body = (await req.json()) as {
     clientId: string;
@@ -46,6 +46,8 @@ export async function POST(req: NextRequest) {
       { status: 400 }
     );
   }
+
+  await requireClientAccess({ dbUserId, clientId: body.clientId, orgId: org.id, role });
 
   const db = createDb(process.env.DATABASE_URL!);
 

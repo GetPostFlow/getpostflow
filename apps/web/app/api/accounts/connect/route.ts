@@ -17,6 +17,7 @@
  */
 
 import { NextResponse } from "next/server";
+import { requireOrgAuthWithRoleApi, requireClientAccess, isAdminRole } from "@/lib/auth-org";
 
 const AYRSHARE_OAUTH_BASE = "https://app.ayrshare.com/auth";
 
@@ -33,6 +34,14 @@ const PLATFORM_OAUTH_PATHS: Record<string, string> = {
 };
 
 export async function POST(req: Request) {
+  const auth = await requireOrgAuthWithRoleApi();
+  if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  // Only admins can initiate OAuth connections
+  if (!isAdminRole(auth.role)) {
+    return NextResponse.json({ error: "Forbidden: Admin role required" }, { status: 403 });
+  }
+
   let body: { platform?: string; clientId?: string };
   try {
     body = (await req.json()) as { platform?: string; clientId?: string };
@@ -48,6 +57,8 @@ export async function POST(req: Request) {
       { status: 400 }
     );
   }
+
+  await requireClientAccess({ dbUserId: auth.dbUserId, clientId, orgId: auth.orgRow.id, role: auth.role });
 
   // Reddit: only monitoring supported — no OAuth needed for posting via Ayrshare
   if (platform === "reddit") {
@@ -79,12 +90,17 @@ export async function POST(req: Request) {
  * Query: clientId
  */
 export async function GET(req: Request) {
+  const auth = await requireOrgAuthWithRoleApi();
+  if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   const { searchParams } = new URL(req.url);
   const clientId = searchParams.get("clientId");
 
   if (!clientId) {
     return NextResponse.json({ error: "clientId is required" }, { status: 400 });
   }
+
+  await requireClientAccess({ dbUserId: auth.dbUserId, clientId, orgId: auth.orgRow.id, role: auth.role });
 
   try {
     const { createDb, socialAccounts } = await import("@getpostflow/db");

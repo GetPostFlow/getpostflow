@@ -14,8 +14,11 @@
 
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import { createDb, orgs, users, orgMemberships } from "@getpostflow/db";
-import { eq, inArray } from "drizzle-orm";
+import { createDb, orgs, users, orgMemberships, clientAssignments } from "@getpostflow/db";
+import { eq, inArray, and } from "drizzle-orm";
+import { requireRole, hasRole, type OrgRole, PermissionError } from "@getpostflow/permissions";
+
+export { PermissionError };
 
 async function resolveOrgRow(userId: string, clerkOrgId: string | null) {
   const db = createDb(process.env.DATABASE_URL!);
@@ -87,6 +90,8 @@ async function resolveOrgRow(userId: string, clerkOrgId: string | null) {
 
 export async function requireOrgAuth(): Promise<{
   userId: string;
+  dbUserId: string;
+  role: OrgRole;
   clerkOrgId: string | null;
   orgRow: { id: string; clerkOrgId: string | null };
 }> {
@@ -95,7 +100,17 @@ export async function requireOrgAuth(): Promise<{
 
   const result = await resolveOrgRow(userId, clerkOrgId ?? null);
   if (!result) redirect("/sign-in");
-  return result;
+
+  const membership = await resolveMembership(userId, clerkOrgId ?? null);
+  if (!membership) redirect("/sign-in");
+
+  return {
+    userId,
+    dbUserId: membership.dbUserId,
+    role: membership.role,
+    clerkOrgId: result.clerkOrgId,
+    orgRow: result.orgRow,
+  };
 }
 
 export async function requireOrgAuthApi(): Promise<{
@@ -106,5 +121,130 @@ export async function requireOrgAuthApi(): Promise<{
   const { userId, orgId: clerkOrgId } = await auth();
   if (!userId) return null;
   return resolveOrgRow(userId, clerkOrgId ?? null);
+}
+
+// ── Resolve full membership (user + role + org) ──────────────────────────────
+
+export async function resolveMembership(userId: string, clerkOrgId: string | null): Promise<{
+  dbUserId: string;
+  role: OrgRole;
+  orgRow: { id: string; clerkOrgId: string | null };
+} | null> {
+  const orgResult = await resolveOrgRow(userId, clerkOrgId);
+  if (!orgResult) return null;
+
+  const db = createDb(process.env.DATABASE_URL!);
+  const [dbUser] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.clerkUserId, userId))
+    .limit(1);
+  if (!dbUser) return null;
+
+  const [membership] = await db
+    .select({ role: orgMemberships.role })
+    .from(orgMemberships)
+    .where(and(eq(orgMemberships.orgId, orgResult.orgRow.id), eq(orgMemberships.userId, dbUser.id)))
+    .limit(1);
+
+  const role = (membership?.role ?? "support") as OrgRole;
+  return { dbUserId: dbUser.id, role, orgRow: orgResult.orgRow };
+}
+
+// ── Role helpers ─────────────────────────────────────────────────────────────
+
+export function isAdminRole(role: OrgRole): boolean {
+  return role === "org_owner" || role === "org_admin";
+}
+
+// ── Client access guard ──────────────────────────────────────────────────────
+
+export async function requireClientAccess({
+  dbUserId,
+  clientId,
+  orgId,
+  role,
+}: {
+  dbUserId: string;
+  clientId: string;
+  orgId: string;
+  role: OrgRole;
+}): Promise<void> {
+  if (isAdminRole(role)) return;
+
+  const db = createDb(process.env.DATABASE_URL!);
+  const [assignment] = await db
+    .select()
+    .from(clientAssignments)
+    .where(
+      and(
+        eq(clientAssignments.clientId, clientId),
+        eq(clientAssignments.userId, dbUserId),
+        eq(clientAssignments.orgId, orgId)
+      )
+    )
+    .limit(1);
+
+  if (!assignment) {
+    throw new PermissionError("Forbidden: You do not have access to this client.");
+  }
+}
+
+// ── Combined API auth + role + client access ─────────────────────────────────
+
+export async function requireOrgAuthWithRole(
+  requiredRole?: OrgRole
+): Promise<{
+  userId: string;
+  dbUserId: string;
+  role: OrgRole;
+  orgRow: { id: string; clerkOrgId: string | null };
+}> {
+  const { userId, orgId: clerkOrgId } = await auth();
+  if (!userId) redirect("/sign-in");
+
+  const membership = await resolveMembership(userId, clerkOrgId ?? null);
+  if (!membership) redirect("/sign-in");
+
+  if (requiredRole) {
+    requireRole(membership.role, requiredRole);
+  }
+
+  return {
+    userId,
+    dbUserId: membership.dbUserId,
+    role: membership.role,
+    orgRow: membership.orgRow,
+  };
+}
+
+export async function requireOrgAuthWithRoleApi(
+  requiredRole?: OrgRole
+): Promise<{
+  userId: string;
+  dbUserId: string;
+  role: OrgRole;
+  orgRow: { id: string; clerkOrgId: string | null };
+} | null> {
+  const { userId, orgId: clerkOrgId } = await auth();
+  if (!userId) return null;
+
+  const membership = await resolveMembership(userId, clerkOrgId ?? null);
+  if (!membership) return null;
+
+  if (requiredRole) {
+    try {
+      requireRole(membership.role, requiredRole);
+    } catch {
+      return null;
+    }
+  }
+
+  return {
+    userId,
+    dbUserId: membership.dbUserId,
+    role: membership.role,
+    orgRow: membership.orgRow,
+  };
 }
 

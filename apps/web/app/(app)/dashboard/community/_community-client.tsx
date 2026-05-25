@@ -385,7 +385,16 @@ function FollowUpRemindersTab() {
 
 type Tab = "moderation" | "templates" | "reminders";
 
-export default function CommunityManagementClient() {
+interface ClientOption {
+  id: string;
+  name: string;
+}
+
+interface CommunityManagementClientProps {
+  clientList: ClientOption[];
+}
+
+export default function CommunityManagementClient({ clientList }: CommunityManagementClientProps) {
   const [tab, setTab] = useState<Tab>("moderation");
 
   const TABS: Array<{ id: Tab; label: string; icon: string }> = [

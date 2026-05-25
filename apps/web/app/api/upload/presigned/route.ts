@@ -1,4 +1,4 @@
-import { requireOrgAuthApi } from "@/lib/auth-org";
+import { requireOrgAuthWithRoleApi, requireClientAccess } from "@/lib/auth-org";
 import { NextRequest, NextResponse } from "next/server";
 import { createDb } from "@getpostflow/db";
 import { assets, orgs } from "@getpostflow/db";
@@ -31,11 +31,10 @@ function inferAssetType(mimeType: string): "image" | "video" | "document" | "aud
 }
 
 export async function POST(req: NextRequest) {
-  const authResult = await requireOrgAuthApi();
-  if (!authResult) {
+  const auth = await requireOrgAuthWithRoleApi();
+  if (!auth) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const { userId, orgRow: org } = authResult;
 
   const body = (await req.json()) as {
     filename: string;
@@ -48,17 +47,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "filename and mimeType are required" }, { status: 400 });
   }
 
+  if (body.clientId) {
+    await requireClientAccess({ dbUserId: auth.dbUserId, clientId: body.clientId, orgId: auth.orgRow.id, role: auth.role });
+  }
+
   const db = createDb(process.env.DATABASE_URL!);
 
   const ext = body.filename.split(".").pop() ?? "bin";
-  const storageKey = `assets/${org.id}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
+  const storageKey = `assets/${auth.orgRow.id}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
   const assetType = inferAssetType(body.mimeType);
 
   // Create asset record first
   const [asset] = await db
     .insert(assets)
     .values({
-      orgId: org.id,
+      orgId: auth.orgRow.id,
       clientId: body.clientId ?? null,
       type: assetType,
       kind: assetType,

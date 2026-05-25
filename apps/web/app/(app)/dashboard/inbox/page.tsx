@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import InboxClient from "./_inbox-client";
+import { requireOrgAuth, isAdminRole } from "@/lib/auth-org";
+import { createDb, clients, clientAssignments } from "@getpostflow/db";
+import { eq, and, inArray } from "drizzle-orm";
 
 export const metadata: Metadata = {
   title: "Inbox — GetPostFlow",
@@ -12,6 +15,27 @@ interface Props {
 
 export default async function InboxPage({ searchParams }: Props) {
   const { client } = await searchParams;
+  const { dbUserId, orgRow: org, role } = await requireOrgAuth();
+
+  const db = createDb(process.env.DATABASE_URL!);
+
+  let clientList: { id: string; name: string }[] = [];
+  if (isAdminRole(role)) {
+    clientList = await db.select({ id: clients.id, name: clients.name }).from(clients).where(eq(clients.orgId, org.id));
+  } else {
+    const assignments = await db
+      .select({ clientId: clientAssignments.clientId })
+      .from(clientAssignments)
+      .where(and(eq(clientAssignments.orgId, org.id), eq(clientAssignments.userId, dbUserId)));
+    const assignedIds = assignments.map((a) => a.clientId);
+    if (assignedIds.length > 0) {
+      clientList = await db
+        .select({ id: clients.id, name: clients.name })
+        .from(clients)
+        .where(and(eq(clients.orgId, org.id), inArray(clients.id, assignedIds)));
+    }
+  }
+
   return (
     <div>
       {/* Definition banner */}
@@ -49,7 +73,7 @@ export default async function InboxPage({ searchParams }: Props) {
           </a>
         </div>
       )}
-      <InboxClient />
+      <InboxClient clientList={clientList} />
     </div>
   );
 }

@@ -1,8 +1,8 @@
 
-import { requireOrgAuth } from "@/lib/auth-org";
+import { requireOrgAuth, isAdminRole } from "@/lib/auth-org";
 import { createDb } from "@getpostflow/db";
-import { clients, contentItems } from "@getpostflow/db";
-import { eq, desc } from "drizzle-orm";
+import { clients, contentItems, clientAssignments } from "@getpostflow/db";
+import { eq, desc, and, inArray } from "drizzle-orm";
 import { Badge } from "@getpostflow/ui/badge";
 import { Card, CardContent, CardHeader } from "@getpostflow/ui/card";
 import { EmptyState } from "@getpostflow/ui/empty-state";
@@ -58,13 +58,29 @@ export default async function ContentQueuePage({ searchParams }: Props) {
   const { client: clientFilter, status: statusFilter, platform: platformFilter } = await searchParams;
   const db = createDb(process.env.DATABASE_URL!);
 
-  const { orgRow: org } = await requireOrgAuth();
+  const { dbUserId, orgRow: org, role } = await requireOrgAuth();
 
-  const clientList = await db.select({ id: clients.id, name: clients.name }).from(clients).where(eq(clients.orgId, org.id));
+  let clientList: { id: string; name: string }[] = [];
+
+  if (isAdminRole(role)) {
+    clientList = await db.select({ id: clients.id, name: clients.name }).from(clients).where(eq(clients.orgId, org.id));
+  } else {
+    const assignments = await db
+      .select({ clientId: clientAssignments.clientId })
+      .from(clientAssignments)
+      .where(and(eq(clientAssignments.orgId, org.id), eq(clientAssignments.userId, dbUserId)));
+    const assignedIds = assignments.map((a) => a.clientId);
+    if (assignedIds.length > 0) {
+      clientList = await db
+        .select({ id: clients.id, name: clients.name })
+        .from(clients)
+        .where(and(eq(clients.orgId, org.id), inArray(clients.id, assignedIds)));
+    }
+  }
 
   const clientIds = clientList.map((c) => c.id);
 
-  // Fetch content across all clients
+  // Fetch content across assigned clients only
   const allContent = clientIds.length > 0
     ? await db
         .select({
@@ -79,7 +95,7 @@ export default async function ContentQueuePage({ searchParams }: Props) {
         })
         .from(contentItems)
         .innerJoin(clients, eq(contentItems.clientId, clients.id))
-        .where(eq(clients.orgId, org.id))
+        .where(and(eq(clients.orgId, org.id), inArray(clients.id, clientIds)))
         .orderBy(desc(contentItems.createdAt))
         .limit(100)
     : [];

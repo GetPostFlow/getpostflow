@@ -10,19 +10,31 @@
  */
 
 import { NextResponse } from "next/server";
+import { requireOrgAuthWithRoleApi, requireClientAccess } from "@/lib/auth-org";
 
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireOrgAuthWithRoleApi();
+  if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   const { id: contentItemId } = await params;
   const { searchParams } = new URL(req.url);
   const range = searchParams.get("range") ?? "30d";
 
   try {
-    const { createDb, analyticsEvents, publishedContent } = await import("@getpostflow/db");
+    const { createDb, analyticsEvents, publishedContent, contentItems } = await import("@getpostflow/db");
     const { eq } = await import("drizzle-orm");
     const db = createDb();
+
+    // Verify content item exists and resolve clientId
+    const [contentItem] = await db.select({ clientId: contentItems.clientId }).from(contentItems).where(eq(contentItems.id, contentItemId)).limit(1);
+    if (!contentItem) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+    if (contentItem.clientId) {
+      await requireClientAccess({ dbUserId: auth.dbUserId, clientId: contentItem.clientId, orgId: auth.orgRow.id, role: auth.role });
+    }
 
     // Load published records for this content item
     const published = await db

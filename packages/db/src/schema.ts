@@ -152,6 +152,7 @@ export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
   clerkUserId: varchar("clerk_user_id", { length: 255 }).notNull().unique(),
   email: varchar("email", { length: 255 }).notNull(),
+  name: varchar("name", { length: 255 }),
   fullName: varchar("full_name", { length: 255 }),
   avatarUrl: varchar("avatar_url", { length: 1024 }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
@@ -172,6 +173,7 @@ export const clientAssignments = pgTable("client_assignments", {
   orgId: uuid("org_id").notNull(),
   userId: uuid("user_id").notNull(),
   clientId: uuid("client_id").notNull(),
+  role: membershipRoleEnum("role").notNull().default("support"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
 });
 
@@ -548,6 +550,7 @@ export const clientIntakeSubmissions = pgTable("client_intake_submissions", {
 export const clientBrandStrategies = pgTable("client_brand_strategies", {
   id: uuid("id").defaultRandom().primaryKey(),
   clientId: uuid("client_id").notNull(),
+  orgId: uuid("org_id").notNull(),
   versionInt: integer("version_int").notNull().default(1),
   status: brandStrategyStatusEnum("status").notNull().default("ai_drafting"),
   draftPayload: jsonb("draft_payload").notNull().default({}),
@@ -734,6 +737,28 @@ export const invoices = pgTable("invoices", {
   pdfUrl: varchar("pdf_url", { length: 1024 }),
   description: varchar("description", { length: 512 }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+// ── Funnel Rules (per-client community funnel configuration) ──────────────────
+
+export const funnelStageEnum = pgEnum("funnel_stage", [
+  "awareness",
+  "interest",
+  "conversion",
+]);
+
+export const funnelRules = pgTable("funnel_rules", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  orgId: uuid("org_id").notNull(),
+  clientId: uuid("client_id").notNull(),
+  stage: funnelStageEnum("stage").notNull(),
+  actionType: varchar("action_type", { length: 50 }).notNull(), // e.g., "auto_like", "auto_reply", "dm_initiate", "lead_qualify"
+  keywords: jsonb("keywords").$type<string[]>().default([]),
+  replyTemplate: text("reply_template"),
+  ctaUrl: varchar("cta_url", { length: 1024 }),
+  enabled: boolean("enabled").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
 // ── Tasks ───────────────────────────────────────────────────────────────────

@@ -52,6 +52,7 @@ export async function POST(req: Request) {
     // Store draft
     await db.insert(clientBrandStrategies).values({
       clientId,
+      orgId: client.orgId,
       versionInt: 1,
       status: "strategist_pending",
       draftPayload: draft as unknown as Record<string, unknown>,

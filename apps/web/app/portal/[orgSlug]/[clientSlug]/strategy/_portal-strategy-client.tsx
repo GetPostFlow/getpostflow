@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { BrandStrategyDraft } from "@getpostflow/ai";
-import { clientApproveStrategy, clientRequestChanges } from "../../../../(app)/dashboard/clients/actions";
+import { clientApproveStrategy, clientRequestChanges, clientRejectStrategy } from "../../../../(app)/dashboard/clients/actions";
 
 interface ClientPortalStrategyProps {
   strategyId: string;
@@ -49,10 +49,13 @@ export default function ClientPortalStrategy({
   tokenHash,
 }: ClientPortalStrategyProps) {
   const [isApproving, setIsApproving] = useState(false);
+  const [isRejecting, setIsRejecting] = useState(false);
   const [isRequestingChanges, setIsRequestingChanges] = useState(false);
   const [showChangesModal, setShowChangesModal] = useState(false);
+  const [showRejectModal, setShowRejectModal] = useState(false);
   const [changesComment, setChangesComment] = useState("");
-  const [outcome, setOutcome] = useState<"approved" | "changes_requested" | null>(null);
+  const [rejectComment, setRejectComment] = useState("");
+  const [outcome, setOutcome] = useState<"approved" | "changes_requested" | "rejected" | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const isApproved = status === "active" || status === "client_approved";
@@ -86,6 +89,21 @@ export default function ClientPortalStrategy({
     }
   }
 
+  async function handleReject() {
+    if (!rejectComment.trim()) return;
+    setIsRejecting(true);
+    setError(null);
+    try {
+      await clientRejectStrategy(strategyId, tokenHash, rejectComment);
+      setOutcome("rejected");
+      setShowRejectModal(false);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Something went wrong. Please try again.");
+    } finally {
+      setIsRejecting(false);
+    }
+  }
+
   if (outcome === "approved") {
     return (
       <div>
@@ -98,13 +116,20 @@ export default function ClientPortalStrategy({
           status={status}
           onApprove={handleApprove}
           onRequestChanges={() => setShowChangesModal(true)}
+          onReject={() => setShowRejectModal(true)}
           isApproving={isApproving}
           isRequestingChanges={isRequestingChanges}
+          isRejecting={isRejecting}
           changesComment={changesComment}
           setChangesComment={setChangesComment}
           showChangesModal={showChangesModal}
           setShowChangesModal={setShowChangesModal}
           handleRequestChanges={handleRequestChanges}
+          rejectComment={rejectComment}
+          setRejectComment={setRejectComment}
+          showRejectModal={showRejectModal}
+          setShowRejectModal={setShowRejectModal}
+          handleReject={handleReject}
           error={error}
         />
       </div>
@@ -123,13 +148,52 @@ export default function ClientPortalStrategy({
           status={status}
           onApprove={handleApprove}
           onRequestChanges={() => setShowChangesModal(true)}
+          onReject={() => setShowRejectModal(true)}
           isApproving={isApproving}
           isRequestingChanges={isRequestingChanges}
+          isRejecting={isRejecting}
           changesComment={changesComment}
           setChangesComment={setChangesComment}
           showChangesModal={showChangesModal}
           setShowChangesModal={setShowChangesModal}
           handleRequestChanges={handleRequestChanges}
+          rejectComment={rejectComment}
+          setRejectComment={setRejectComment}
+          showRejectModal={showRejectModal}
+          setShowRejectModal={setShowRejectModal}
+          handleReject={handleReject}
+          error={error}
+        />
+      </div>
+    );
+  }
+
+  if (outcome === "rejected") {
+    return (
+      <div>
+        <RejectedBanner />
+        <StrategyContent
+          draft={draft}
+          clientName={clientName}
+          strategyId={strategyId}
+          tokenHash={tokenHash}
+          status={status}
+          onApprove={handleApprove}
+          onRequestChanges={() => setShowChangesModal(true)}
+          onReject={() => setShowRejectModal(true)}
+          isApproving={isApproving}
+          isRequestingChanges={isRequestingChanges}
+          isRejecting={isRejecting}
+          changesComment={changesComment}
+          setChangesComment={setChangesComment}
+          showChangesModal={showChangesModal}
+          setShowChangesModal={setShowChangesModal}
+          handleRequestChanges={handleRequestChanges}
+          rejectComment={rejectComment}
+          setRejectComment={setRejectComment}
+          showRejectModal={showRejectModal}
+          setShowRejectModal={setShowRejectModal}
+          handleReject={handleReject}
           error={error}
         />
       </div>
@@ -148,13 +212,20 @@ export default function ClientPortalStrategy({
         status={status}
         onApprove={handleApprove}
         onRequestChanges={() => setShowChangesModal(true)}
+        onReject={() => setShowRejectModal(true)}
         isApproving={isApproving}
         isRequestingChanges={isRequestingChanges}
+        isRejecting={isRejecting}
         changesComment={changesComment}
         setChangesComment={setChangesComment}
         showChangesModal={showChangesModal}
         setShowChangesModal={setShowChangesModal}
         handleRequestChanges={handleRequestChanges}
+        rejectComment={rejectComment}
+        setRejectComment={setRejectComment}
+        showRejectModal={showRejectModal}
+        setShowRejectModal={setShowRejectModal}
+        handleReject={handleReject}
         error={error}
       />
     </div>
@@ -197,6 +268,47 @@ function ApprovedBanner({ clientName }: { clientName: string }) {
         <p style={{ fontSize: "13px", color: "#16a34a" }}>
           Thank you for reviewing and approving the brand strategy for <strong>{clientName}</strong>.
           Your agency will now begin executing the plan.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function RejectedBanner() {
+  return (
+    <div
+      style={{
+        background: "#fef2f2",
+        border: "1px solid #fecaca",
+        borderRadius: "16px",
+        padding: "16px 20px",
+        marginBottom: "20px",
+        display: "flex",
+        alignItems: "center",
+        gap: "12px",
+      }}
+    >
+      <div
+        style={{
+          width: "32px",
+          height: "32px",
+          borderRadius: "50%",
+          background: "#fee2e2",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: "16px",
+          flexShrink: 0,
+        }}
+      >
+        ✕
+      </div>
+      <div>
+        <p style={{ fontSize: "14px", fontWeight: 600, color: "#991b1b", marginBottom: "2px" }}>
+          Strategy Rejected
+        </p>
+        <p style={{ fontSize: "13px", color: "#dc2626" }}>
+          Your feedback has been sent to the strategy team. They will review your comments and revise the strategy.
         </p>
       </div>
     </div>
@@ -293,13 +405,20 @@ interface StrategyContentProps {
   status: string;
   onApprove: () => void;
   onRequestChanges: () => void;
+  onReject: () => void;
   isApproving: boolean;
   isRequestingChanges: boolean;
+  isRejecting: boolean;
   changesComment: string;
   setChangesComment: (v: string) => void;
   showChangesModal: boolean;
   setShowChangesModal: (v: boolean) => void;
   handleRequestChanges: () => void;
+  rejectComment: string;
+  setRejectComment: (v: string) => void;
+  showRejectModal: boolean;
+  setShowRejectModal: (v: boolean) => void;
+  handleReject: () => void;
   error: string | null;
 }
 
@@ -308,13 +427,20 @@ function StrategyContent({
   clientName,
   onApprove,
   onRequestChanges,
+  onReject,
   isApproving,
   isRequestingChanges,
+  isRejecting,
   changesComment,
   setChangesComment,
   showChangesModal,
   setShowChangesModal,
   handleRequestChanges,
+  rejectComment,
+  setRejectComment,
+  showRejectModal,
+  setShowRejectModal,
+  handleReject,
   error,
 }: StrategyContentProps) {
   return (
@@ -612,6 +738,21 @@ function StrategyContent({
           >
             Request Changes
           </button>
+          <button
+            onClick={onReject}
+            style={{
+              background: "transparent",
+              color: "#dc2626",
+              border: "1px solid #fca5a5",
+              borderRadius: "12px",
+              padding: "12px 24px",
+              fontSize: "14px",
+              fontWeight: 500,
+              cursor: "pointer",
+            }}
+          >
+            Reject
+          </button>
         </div>
       </div>
 
@@ -687,6 +828,84 @@ function StrategyContent({
                 }}
               >
                 {isRequestingChanges ? "Sending…" : "Send Feedback"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reject modal */}
+      {showRejectModal && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.4)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 50,
+            padding: "24px",
+          }}
+        >
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: "16px",
+              padding: "24px",
+              width: "100%",
+              maxWidth: "480px",
+            }}
+          >
+            <h3 style={{ fontSize: "16px", fontWeight: 700, marginBottom: "8px" }}>Reject Strategy</h3>
+            <p style={{ fontSize: "13px", color: "#6b7280", marginBottom: "16px" }}>
+              Please explain why you are rejecting this strategy. This will be sent to the team.
+            </p>
+            <textarea
+              value={rejectComment}
+              onChange={(e) => setRejectComment(e.target.value)}
+              rows={4}
+              placeholder="e.g. This strategy doesn't align with our brand vision..."
+              style={{
+                width: "100%",
+                border: "1px solid #d1d5db",
+                borderRadius: "10px",
+                padding: "10px 12px",
+                fontSize: "13px",
+                resize: "vertical",
+                boxSizing: "border-box",
+              }}
+            />
+            <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", marginTop: "16px" }}>
+              <button
+                onClick={() => setShowRejectModal(false)}
+                style={{
+                  background: "transparent",
+                  border: "1px solid #d1d5db",
+                  borderRadius: "10px",
+                  padding: "8px 16px",
+                  fontSize: "13px",
+                  cursor: "pointer",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleReject}
+                disabled={isRejecting || !rejectComment.trim()}
+                style={{
+                  background: "#dc2626",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "10px",
+                  padding: "8px 20px",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  cursor: isRejecting || !rejectComment.trim() ? "not-allowed" : "pointer",
+                  opacity: isRejecting || !rejectComment.trim() ? 0.6 : 1,
+                }}
+              >
+                {isRejecting ? "Sending…" : "Reject Strategy"}
               </button>
             </div>
           </div>

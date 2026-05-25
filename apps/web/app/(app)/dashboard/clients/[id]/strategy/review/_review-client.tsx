@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import type { BrandStrategyDraft } from "@getpostflow/ai";
 import { ApprovalThread } from "@getpostflow/ui";
 import type { ApprovalComment, ApprovalDecision } from "@getpostflow/approvals";
-import { strategistApproveStrategy, addStrategistComment, regenerateSection } from "../../../actions";
+import { strategistApproveStrategy, addStrategistComment, regenerateSection, requestStrategyChanges } from "../../../actions";
 
 interface StrategyRecord {
   id: string;
@@ -335,6 +335,34 @@ export default function StrategyReviewClient({
     }
   }
 
+  async function handleRequestChanges() {
+    setIsApproving(true);
+    try {
+      const result = await requestStrategyChanges(
+        strategy.id,
+        'Changes requested by strategist. Please review and update.'
+      );
+      if (result?.success) {
+        setNotification({ type: 'success', message: 'Changes requested. Strategy returned to draft.' });
+        setDecisions((prev) => [
+          ...prev,
+          {
+            id: crypto.randomUUID(),
+            decidedByUserId: "strategist",
+            decidedByName: "Strategist",
+            decision: "changes_requested" as const,
+            notes: "Changes requested by strategist",
+            createdAt: new Date().toISOString(),
+          },
+        ]);
+      }
+    } catch (e) {
+      setNotification({ type: "error", message: "Failed to request changes. Please try again." });
+    } finally {
+      setIsApproving(false);
+    }
+  }
+
   async function handleComment(body: string, section?: string) {
     startTransition(async () => {
       await addStrategistComment(strategy.id, body, section);
@@ -472,6 +500,7 @@ export default function StrategyReviewClient({
               status={strategy.status}
               onComment={handleComment}
               onApprove={isApproved ? undefined : handleApprove}
+              onRequestChanges={isApproved ? undefined : handleRequestChanges}
               canApprove={!isApproved && strategy.status === "strategist_pending"}
               canComment
               isLoading={isPending || isApproving}

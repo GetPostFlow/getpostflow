@@ -190,6 +190,7 @@ export async function submitIntake(clientId: string, payload: Record<string, unk
     // Store draft
     await database.insert(clientBrandStrategies).values({
       clientId,
+      orgId: orgId,
       versionInt: 1,
       status: "strategist_pending",
       draftPayload: draft as unknown as Record<string, unknown>,
@@ -321,6 +322,48 @@ export async function addStrategistComment(
     .update(clientBrandStrategies)
     .set({ strategistComments: comments })
     .where(eq(clientBrandStrategies.id, strategyId));
+
+  return { success: true };
+}
+
+// ─── Request strategy changes ─────────────────────────────────────────────────
+
+export async function requestStrategyChanges(strategyId: string, comment: string) {
+  const { dbUserId, isAdmin, orgId } = await requireAuthAndRole();
+
+  const database = db();
+  const { clientBrandStrategies, clients, auditLogs } = await import("@getpostflow/db");
+  const { eq } = await import("drizzle-orm");
+
+  const [strategy] = await database
+    .select()
+    .from(clientBrandStrategies)
+    .where(eq(clientBrandStrategies.id, strategyId))
+    .limit(1);
+
+  if (!strategy) throw new Error("Strategy not found");
+  if (!isAdmin) {
+    await enforceClientAccess(strategy.clientId, orgId, isAdmin, dbUserId);
+  }
+
+  await database
+    .update(clientBrandStrategies)
+    .set({ status: "strategist_pending" })
+    .where(eq(clientBrandStrategies.id, strategyId));
+
+  await database
+    .update(clients)
+    .set({ status: "strategist_review" })
+    .where(eq(clients.id, strategy.clientId));
+
+  await database.insert(auditLogs).values({
+    orgId: strategy.orgId,
+    clientId: strategy.clientId,
+    action: "strategy_changes_requested",
+    entityType: "brand_strategy",
+    entityId: strategyId,
+    payload: { comment, requestedBy: dbUserId },
+  });
 
   return { success: true };
 }
@@ -526,6 +569,99 @@ export async function clientRequestChanges(
     }
   } catch (err) {
     console.error("[clientRequestChanges] Notification failed:", err);
+  }
+
+  return { success: true };
+}
+
+// ─── Client portal: reject strategy ────────────────────────────────────────────
+
+export async function clientRejectStrategy(
+  strategyId: string,
+  tokenHash: string,
+  comment: string
+) {
+  const database = db();
+  const { clientBrandStrategies, clients, portalTokens, auditLogs } = await import("@getpostflow/db");
+  const { eq, and, gt } = await import("drizzle-orm");
+
+  const [token] = await database
+    .select()
+    .from(portalTokens)
+    .where(
+      and(
+        eq(portalTokens.tokenHash, tokenHash),
+        gt(portalTokens.expiresAt, new Date()),
+      )
+    )
+    .limit(1);
+
+  if (!token) throw new Error("Invalid or expired token");
+
+  const [strategy] = await database
+    .select()
+    .from(clientBrandStrategies)
+    .where(eq(clientBrandStrategies.id, strategyId))
+    .limit(1);
+
+  if (!strategy || strategy.clientId !== token.clientId) throw new Error("Unauthorized");
+
+  const clientComments = [...((strategy.clientComments as unknown[]) ?? [])];
+  clientComments.push({
+    id: crypto.randomUUID(),
+    authorId: token.email,
+    authorName: token.email,
+    body: comment,
+    createdAt: new Date().toISOString(),
+  });
+
+  await database
+    .update(clientBrandStrategies)
+    .set({ status: "strategist_pending", clientComments })
+    .where(eq(clientBrandStrategies.id, strategyId));
+
+  await database
+    .update(clients)
+    .set({ status: "strategist_review" })
+    .where(eq(clients.id, strategy.clientId));
+
+  // Audit log
+  await database.insert(auditLogs).values({
+    orgId: strategy.orgId,
+    clientId: strategy.clientId,
+    action: "strategy_rejected_by_client",
+    entityType: "brand_strategy",
+    entityId: strategyId,
+    payload: { comment },
+  });
+
+  // Notify internal team
+  try {
+    const [client] = await database.select().from(clients).where(eq(clients.id, strategy.clientId)).limit(1);
+    if (client) {
+      const { sendStrategyReadyForInternalReviewEmail } = await import("@getpostflow/notifications");
+      const { orgMemberships, users } = await import("@getpostflow/db");
+      const team = await database
+        .select({ userId: orgMemberships.userId })
+        .from(orgMemberships)
+        .where(eq(orgMemberships.orgId, client.orgId));
+      const userIds = team.map((t) => t.userId);
+      if (userIds.length > 0) {
+        const userRows = await database.select({ email: users.email }).from(users).where(eq(users.id, userIds[0]));
+        for (const u of userRows) {
+          if (u.email) {
+            const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+            await sendStrategyReadyForInternalReviewEmail({
+              to: u.email,
+              clientName: client.name,
+              reviewUrl: `${appUrl}/dashboard/clients/${client.id}/strategy/review`,
+            }).catch(() => {});
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.error("[clientRejectStrategy] Notification failed:", err);
   }
 
   return { success: true };

@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
-import { requireOrgAuth } from "@/lib/auth-org";
+import { requireOrgAuth, requireClientAccess, isAdminRole } from "@/lib/auth-org";
 import { createDb } from "@getpostflow/db";
-import { clients, clientBrandStrategies, clientIntakeSubmissions, contentItems } from "@getpostflow/db";
+import { clients, clientBrandStrategies, clientIntakeSubmissions, contentItems, clientAssignments, orgMemberships, users } from "@getpostflow/db";
 import { eq, and, desc, or } from "drizzle-orm";
 import { Badge } from "@getpostflow/ui/badge";
 import { Card, CardContent, CardHeader } from "@getpostflow/ui/card";
@@ -97,13 +97,11 @@ export default async function ClientWorkspacePage({ params, searchParams }: Prop
   const { tab: rawTab } = await searchParams;
   const activeTab: Tab = (TABS.find((t) => t.id === rawTab)?.id) ?? "overview";
 
-  const { orgRow: org } = await requireOrgAuth();
+  const { dbUserId, orgRow: org, role } = await requireOrgAuth();
 
   const db = createDb(process.env.DATABASE_URL!);
 
   // Guard: only include the UUID comparison when `id` is actually a valid UUID.
-  // Passing a non-UUID slug (e.g. "acme-bakery") to eq(clients.id, ...) causes
-  // Postgres to throw "invalid input syntax for type uuid" and return HTTP 500.
   const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const isUuid = UUID_RE.test(id);
 
@@ -121,6 +119,8 @@ export default async function ClientWorkspacePage({ params, searchParams }: Prop
     .limit(1);
 
   if (!client) notFound();
+
+  await requireClientAccess({ dbUserId, clientId: client.id, orgId: org.id, role });
 
   const [latestIntake] = await db
     .select()
@@ -260,7 +260,7 @@ export default async function ClientWorkspacePage({ params, searchParams }: Prop
           <ActivityTab client={client} latestIntake={latestIntake} latestStrategy={latestStrategy} />
         )}
         {activeTab === "team" && (
-          <TeamTab client={client} />
+          <TeamTab client={client} orgId={org.id} dbUserId={dbUserId} role={role} />
         )}
       </div>
     </div>
@@ -1060,9 +1060,8 @@ function ActivityTab({
   );
 }
 
-function TeamTab({ client }: { client: { id: string; name: string } }) {
-  const [showModal, setShowModal] = React.useState(false);
-  const [role, setRole] = React.useState<"strategist" | "content_manager">("strategist");
+function TeamTab({ client, orgId, dbUserId, role }: { client: { id: string; name: string }; orgId: string; dbUserId: string; role: string }) {
+  const isAdmin = isAdminRole(role as import("@getpostflow/permissions").OrgRole);
 
   return (
     <div className="flex flex-col gap-6">
@@ -1070,73 +1069,162 @@ function TeamTab({ client }: { client: { id: string; name: string } }) {
         <div>
           <h2 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>Assigned Team</h2>
           <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>
-            Assign a strategist and content manager to {client.name}.
+            Team members assigned to {client.name}.
           </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <TeamAssignments clientId={client.id} orgId={orgId} dbUserId={dbUserId} isAdmin={isAdmin} />
+    </div>
+  );
+}
+
+function TeamAssignments({
+  clientId,
+  orgId,
+  dbUserId,
+  isAdmin,
+}: {
+  clientId: string;
+  orgId: string;
+  dbUserId: string;
+  isAdmin: boolean;
+}) {
+  const [assignments, setAssignments] = React.useState<
+    Array<{ id: string; userId: string; role: string; userName?: string; userEmail?: string }>
+  >([]);
+  const [orgMembers, setOrgMembers] = React.useState<
+    Array<{ id: string; name?: string; email?: string; role: string }>
+  >([]);
+  const [loading, setLoading] = React.useState(true);
+  const [selectedUserId, setSelectedUserId] = React.useState("");
+  const [selectedAssignRole, setSelectedAssignRole] = React.useState<"strategist" | "content_manager" | "support">("support");
+
+  React.useEffect(() => {
+    fetch(`/api/clients/${clientId}/assignments`)
+      .then((r) => r.json())
+      .then((data) => {
+        setAssignments(data.assignments ?? []);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+
+    if (isAdmin) {
+      fetch(`/api/org/members`)
+        .then((r) => r.json())
+        .then((data) => setOrgMembers(data.members ?? []))
+        .catch(() => {});
+    }
+  }, [clientId, isAdmin]);
+
+  async function handleAssign() {
+    if (!selectedUserId) return;
+    const res = await fetch(`/api/clients/${clientId}/assignments`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: selectedUserId, role: selectedAssignRole }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setAssignments(data.assignments ?? []);
+      setSelectedUserId("");
+    }
+  }
+
+  async function handleUnassign(userId: string) {
+    const res = await fetch(`/api/clients/${clientId}/assignments?userId=${userId}`, {
+      method: "DELETE",
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setAssignments(data.assignments ?? []);
+    }
+  }
+
+  if (loading) return <p className="text-xs" style={{ color: "var(--text-muted)" }}>Loading...</p>;
+
+  return (
+    <div className="flex flex-col gap-4">
+      {isAdmin && (
         <Card>
           <CardHeader>
-            <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Assigned Strategist</h3>
+            <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Assign Team Member</h3>
           </CardHeader>
           <CardContent>
-            <p className="text-xs mb-3" style={{ color: "var(--text-muted)" }}>
-              No strategist assigned yet.
-            </p>
-            <button
-              onClick={() => { setRole("strategist"); setShowModal(true); }}
-              className="inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs font-medium text-white transition hover:opacity-90"
-              style={{ background: "var(--brand-primary)" }}
-            >
-              Assign Strategist
-            </button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Assigned Content Manager</h3>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs mb-3" style={{ color: "var(--text-muted)" }}>
-              No content manager assigned yet.
-            </p>
-            <button
-              onClick={() => { setRole("content_manager"); setShowModal(true); }}
-              className="inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs font-medium text-white transition hover:opacity-90"
-              style={{ background: "var(--brand-primary)" }}
-            >
-              Assign Content Manager
-            </button>
-          </CardContent>
-        </Card>
-      </div>
-
-      {showModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-6"
-          style={{ background: "rgba(0,0,0,0.4)" }}
-        >
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl">
-            <h3 className="text-base font-bold mb-2" style={{ color: "var(--text-primary)" }}>
-              Assign {role === "strategist" ? "Strategist" : "Content Manager"}
-            </h3>
-            <p className="text-xs mb-4" style={{ color: "var(--text-muted)" }}>
-              Team invites are coming in Phase 2. For now, only the owner/admin can manage clients.
-            </p>
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setShowModal(false)}
-                className="rounded-xl px-4 py-2 text-xs font-medium transition"
-                style={{ border: "1px solid var(--border-soft)", color: "var(--text-secondary)" }}
-              >
-                Close
-              </button>
+            <div className="flex flex-col gap-3">
+              <div className="flex gap-2 items-center">
+                <select
+                  className="rounded-xl border px-3 py-2 text-xs"
+                  style={{ borderColor: "var(--border-soft)", background: "var(--surface)", color: "var(--text-primary)" }}
+                  value={selectedUserId}
+                  onChange={(e) => setSelectedUserId(e.target.value)}
+                >
+                  <option value="">Select member...</option>
+                  {orgMembers
+                    .filter((m) => !assignments.some((a) => a.userId === m.id))
+                    .map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name ?? m.email ?? m.id} ({m.role})
+                      </option>
+                    ))}
+                </select>
+                <select
+                  className="rounded-xl border px-3 py-2 text-xs"
+                  style={{ borderColor: "var(--border-soft)", background: "var(--surface)", color: "var(--text-primary)" }}
+                  value={selectedAssignRole}
+                  onChange={(e) => setSelectedAssignRole(e.target.value as typeof selectedAssignRole)}
+                >
+                  <option value="support">Support</option>
+                  <option value="strategist">Strategist</option>
+                  <option value="content_manager">Content Manager</option>
+                </select>
+                <button
+                  onClick={handleAssign}
+                  disabled={!selectedUserId}
+                  className="rounded-xl px-4 py-2 text-xs font-medium text-white transition hover:opacity-90 disabled:opacity-50"
+                  style={{ background: "var(--brand-primary)" }}
+                >
+                  Assign
+                </button>
+              </div>
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
+
+      <Card>
+        <CardHeader>
+          <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+            Assigned Members ({assignments.length})
+          </h3>
+        </CardHeader>
+        <CardContent>
+          {assignments.length === 0 ? (
+            <p className="text-xs" style={{ color: "var(--text-muted)" }}>No team members assigned yet.</p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {assignments.map((a) => (
+                <div key={a.id} className="flex items-center justify-between rounded-xl p-3" style={{ background: "var(--subtle)" }}>
+                  <div>
+                    <p className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>
+                      {a.userName ?? a.userEmail ?? a.userId}
+                    </p>
+                    <p className="text-[10px] capitalize" style={{ color: "var(--text-muted)" }}>{a.role.replace(/_/g, " ")}</p>
+                  </div>
+                  {isAdmin && (
+                    <button
+                      onClick={() => handleUnassign(a.userId)}
+                      className="text-xs text-red-500 hover:underline"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

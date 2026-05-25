@@ -12,6 +12,7 @@
  */
 
 import { NextResponse } from "next/server";
+import { requireOrgAuthWithRoleApi, requireClientAccess } from "@/lib/auth-org";
 
 function rangeToDateStrings(range: string, from?: string, to?: string) {
   const now = new Date();
@@ -36,6 +37,9 @@ function rangeToDateStrings(range: string, from?: string, to?: string) {
 }
 
 export async function GET(req: Request) {
+  const auth = await requireOrgAuthWithRoleApi();
+  if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   const { searchParams } = new URL(req.url);
   const clientId = searchParams.get("clientId");
   const range = searchParams.get("range") ?? "30d";
@@ -46,6 +50,8 @@ export async function GET(req: Request) {
   if (!clientId) {
     return NextResponse.json({ error: "clientId is required" }, { status: 400 });
   }
+
+  await requireClientAccess({ dbUserId: auth.dbUserId, clientId, orgId: auth.orgRow.id, role: auth.role });
 
   const { fromStr, toStr } = rangeToDateStrings(range, from, to);
 

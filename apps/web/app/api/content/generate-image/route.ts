@@ -1,4 +1,4 @@
-import { requireOrgAuthApi } from "@/lib/auth-org";
+import { requireOrgAuthWithRoleApi, requireClientAccess } from "@/lib/auth-org";
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 
@@ -20,11 +20,15 @@ function getImageSize(platform?: string): "1024x1024" | "1792x1024" | "1024x1792
 }
 
 export async function POST(req: NextRequest) {
-  const authResult = await requireOrgAuthApi();
-  if (!authResult) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireOrgAuthWithRoleApi();
+  if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { prompt, platform } = (await req.json()) as { prompt?: string; platform?: string };
+  const { prompt, platform, clientId } = (await req.json()) as { prompt?: string; platform?: string; clientId?: string };
   if (!prompt?.trim()) return NextResponse.json({ error: "Prompt required" }, { status: 400 });
+
+  if (clientId) {
+    await requireClientAccess({ dbUserId: auth.dbUserId, clientId, orgId: auth.orgRow.id, role: auth.role });
+  }
 
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return NextResponse.json({ error: "OPENAI_API_KEY not configured" }, { status: 500 });

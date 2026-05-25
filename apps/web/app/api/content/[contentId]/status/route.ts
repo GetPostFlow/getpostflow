@@ -1,4 +1,4 @@
-import { requireOrgAuthApi } from "@/lib/auth-org";
+import { requireOrgAuthWithRoleApi, requireClientAccess } from "@/lib/auth-org";
 import { NextRequest, NextResponse } from "next/server";
 import { createDb } from "@getpostflow/db";
 import {
@@ -25,11 +25,11 @@ interface Params {
  */
 export async function PATCH(req: NextRequest, { params }: Params) {
   const { contentId } = await params;
-  const authResult = await requireOrgAuthApi();
-  if (!authResult) {
+  const auth = await requireOrgAuthWithRoleApi();
+  if (!auth) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const { userId, orgRow: org } = authResult;
+  const { dbUserId, orgRow: org, role } = auth;
 
   const body = (await req.json()) as {
     status?: string;
@@ -52,6 +52,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     .limit(1);
 
   if (!item) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  if (item.clientId) {
+    await requireClientAccess({ dbUserId, clientId: item.clientId, orgId: org.id, role });
+  }
 
   // Validate status transition (basic guard)
   const allowedTransitions: Record<string, string[]> = {
@@ -189,11 +193,11 @@ export async function PATCH(req: NextRequest, { params }: Params) {
  */
 export async function GET(req: NextRequest, { params }: Params) {
   const { contentId } = await params;
-  const authResult = await requireOrgAuthApi();
-  if (!authResult) {
+  const auth = await requireOrgAuthWithRoleApi();
+  if (!auth) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const { userId, orgRow: org } = authResult;
+  const { dbUserId, orgRow: org, role } = auth;
 
   const db = createDb(process.env.DATABASE_URL!);
 
@@ -204,6 +208,10 @@ export async function GET(req: NextRequest, { params }: Params) {
     .limit(1);
 
   if (!item) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  if (item.clientId) {
+    await requireClientAccess({ dbUserId, clientId: item.clientId, orgId: org.id, role });
+  }
 
   const versions = await db
     .select()

@@ -424,7 +424,16 @@ function ThreadPanel({
 
 // ── Main inbox client ─────────────────────────────────────────────────────────
 
-export default function InboxClient() {
+interface ClientOption {
+  id: string;
+  name: string;
+}
+
+interface InboxClientProps {
+  clientList: ClientOption[];
+}
+
+export default function InboxClient({ clientList }: InboxClientProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filterPlatform, setFilterPlatform] = useState("all");
   const [filterStatus, setFilterStatus] = useState<"all" | ConversationStatus>("all");

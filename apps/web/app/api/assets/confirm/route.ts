@@ -7,7 +7,7 @@
  * Returns: { asset }
  */
 import { NextRequest, NextResponse } from "next/server";
-import { requireOrgAuth } from "@/lib/auth-org";
+import { requireOrgAuthWithRoleApi, requireClientAccess } from "@/lib/auth-org";
 import { createDb, assets } from "@getpostflow/db";
 import { buildPublicUrl } from "@/lib/r2";
 
@@ -20,7 +20,8 @@ function inferAssetType(mimeType: string): "image" | "video" | "document" | "aud
 
 export async function POST(req: NextRequest) {
   try {
-    const { orgRow: org } = await requireOrgAuth();
+    const auth = await requireOrgAuthWithRoleApi();
+    if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = (await req.json()) as {
       clientId?: string;
@@ -38,13 +39,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (body.clientId) {
+      await requireClientAccess({ dbUserId: auth.dbUserId, clientId: body.clientId, orgId: auth.orgRow.id, role: auth.role });
+    }
+
     const db = createDb(process.env.DATABASE_URL!);
     const assetType = inferAssetType(body.contentType);
 
     const [asset] = await db
       .insert(assets)
       .values({
-        orgId: org.id,
+        orgId: auth.orgRow.id,
         clientId: body.clientId ?? null,
         type: assetType,
         kind: assetType,
@@ -62,7 +67,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ asset });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Unknown error";
-    if (msg.includes("Unauthorized") || msg.includes("redirect")) {
+    if (msg.includes("Unauthorized") || msg.includes("redirect") || msg.includes("Forbidden")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     return NextResponse.json({ error: msg }, { status: 500 });

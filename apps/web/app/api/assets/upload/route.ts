@@ -7,7 +7,7 @@
  * Returns: { asset }
  */
 import { NextRequest, NextResponse } from "next/server";
-import { requireOrgAuth } from "@/lib/auth-org";
+import { requireOrgAuthWithRoleApi, requireClientAccess } from "@/lib/auth-org";
 import { createDb, assets } from "@getpostflow/db";
 import { buildStorageKey, buildPublicUrl, R2_CONFIGURED, getClient } from "@/lib/r2";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
@@ -24,7 +24,8 @@ function inferAssetType(mimeType: string): "image" | "video" | "document" | "aud
 
 export async function POST(req: NextRequest) {
   try {
-    const { orgRow: org } = await requireOrgAuth();
+    const auth = await requireOrgAuthWithRoleApi();
+    if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
@@ -35,7 +36,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    const key = buildStorageKey(org.id, file.name);
+    if (clientId) {
+      await requireClientAccess({ dbUserId: auth.dbUserId, clientId, orgId: auth.orgRow.id, role: auth.role });
+    }
+
+    const key = buildStorageKey(auth.orgRow.id, file.name);
     const contentType = file.type || "application/octet-stream";
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
@@ -62,7 +67,7 @@ export async function POST(req: NextRequest) {
     const [asset] = await db
       .insert(assets)
       .values({
-        orgId: org.id,
+        orgId: auth.orgRow.id,
         clientId: clientId ?? null,
         type: assetType,
         kind: assetType,
@@ -80,7 +85,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ asset });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Unknown error";
-    if (msg.includes("Unauthorized") || msg.includes("redirect")) {
+    if (msg.includes("Unauthorized") || msg.includes("redirect") || msg.includes("Forbidden")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     return NextResponse.json({ error: msg }, { status: 500 });

@@ -1,10 +1,10 @@
-import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
+import { requireOrgAuthWithRoleApi, requireClientAccess } from "@/lib/auth-org";
 import { createDb, tasks } from "@getpostflow/db";
 
 export async function POST(req: NextRequest) {
-  const { userId } = await auth();
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireOrgAuthWithRoleApi();
+  if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = (await req.json()) as {
     title: string;
@@ -15,6 +15,10 @@ export async function POST(req: NextRequest) {
   };
 
   if (!body.title?.trim()) return NextResponse.json({ error: "Title required" }, { status: 400 });
+
+  if (body.clientId) {
+    await requireClientAccess({ dbUserId: auth.dbUserId, clientId: body.clientId, orgId: auth.orgRow.id, role: auth.role });
+  }
 
   const db = createDb(process.env.DATABASE_URL!);
   const [task] = await db

@@ -4,7 +4,7 @@
  * Clerk-authed. Deletes from R2 and DB.
  */
 import { NextRequest, NextResponse } from "next/server";
-import { requireOrgAuth } from "@/lib/auth-org";
+import { requireOrgAuthWithRoleApi, requireClientAccess } from "@/lib/auth-org";
 import { createDb, assets } from "@getpostflow/db";
 import { eq, and } from "drizzle-orm";
 import { deleteObject, R2_CONFIGURED } from "@/lib/r2";
@@ -15,18 +15,23 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const { orgRow: org } = await requireOrgAuth();
+    const auth = await requireOrgAuthWithRoleApi();
+    if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const db = createDb(process.env.DATABASE_URL!);
 
     const [asset] = await db
-      .select({ storageKey: assets.storageKey })
+      .select({ storageKey: assets.storageKey, clientId: assets.clientId })
       .from(assets)
-      .where(and(eq(assets.id, id), eq(assets.orgId, org.id)))
+      .where(and(eq(assets.id, id), eq(assets.orgId, auth.orgRow.id)))
       .limit(1);
 
     if (!asset) {
       return NextResponse.json({ error: "Asset not found" }, { status: 404 });
+    }
+
+    if (asset.clientId) {
+      await requireClientAccess({ dbUserId: auth.dbUserId, clientId: asset.clientId, orgId: auth.orgRow.id, role: auth.role });
     }
 
     if (R2_CONFIGURED && asset.storageKey) {
@@ -37,12 +42,12 @@ export async function DELETE(
       }
     }
 
-    await db.delete(assets).where(and(eq(assets.id, id), eq(assets.orgId, org.id)));
+    await db.delete(assets).where(and(eq(assets.id, id), eq(assets.orgId, auth.orgRow.id)));
 
     return NextResponse.json({ deleted: true });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Unknown error";
-    if (msg.includes("Unauthorized") || msg.includes("redirect")) {
+    if (msg.includes("Unauthorized") || msg.includes("redirect") || msg.includes("Forbidden")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     return NextResponse.json({ error: msg }, { status: 500 });
