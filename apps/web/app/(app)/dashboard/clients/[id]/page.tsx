@@ -531,7 +531,13 @@ function PortalTab({ client }: { client: { id: string; name: string } }) {
           <h2 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>Client Portal Preview</h2>
         </CardHeader>
         <CardContent>
-          <p style={{ color: "var(--text-muted)" }}>Portal preview coming soon.</p>
+          <div className="flex flex-col gap-3">
+            <div className="p-4 rounded-lg" style={{ background: "var(--subtle)" }}>
+              <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>Client Portal URL</p>
+              <p className="text-xs mt-2 font-mono" style={{ color: "var(--text-secondary)" }}>https://portal.getpostflow.com/client-workspace</p>
+              <p className="text-xs mt-3" style={{ color: "var(--text-muted)" }}>Share this link with your client to access their approval queue, content calendar, and brand guidelines.</p>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>
@@ -546,7 +552,26 @@ function BrandKitTabWrapper({ clientId }: { clientId: string }) {
           <h2 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>Brand Kit</h2>
         </CardHeader>
         <CardContent>
-          <p style={{ color: "var(--text-muted)" }}>Brand kit management coming soon.</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="p-4 rounded-lg" style={{ background: "var(--subtle)" }}>
+              <p className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>BRAND COLORS</p>
+              <div className="flex gap-2 mt-3">
+                <div className="h-8 w-8 rounded" style={{ background: "#000000" }} />
+                <div className="h-8 w-8 rounded" style={{ background: "#FFFFFF", border: "1px solid var(--border-soft)" }} />
+                <div className="h-8 w-8 rounded" style={{ background: "#E5E7EB" }} />
+              </div>
+              <p className="text-xs mt-2" style={{ color: "var(--text-muted)" }}>Add primary, secondary, and accent colors</p>
+            </div>
+            <div className="p-4 rounded-lg" style={{ background: "var(--subtle)" }}>
+              <p className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>TYPOGRAPHY</p>
+              <p className="text-sm font-semibold mt-3" style={{ color: "var(--text-primary)" }}>Heading Font</p>
+              <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Select primary typeface</p>
+            </div>
+          </div>
+          <div className="p-4 rounded-lg" style={{ background: "var(--subtle)" }}>
+            <p className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>BRAND VOICE</p>
+            <p className="text-xs mt-2" style={{ color: "var(--text-muted)" }}>Define tone, personality, and messaging guidelines for this client</p>
+          </div>
         </CardContent>
       </Card>
     </div>
@@ -561,7 +586,20 @@ function TemplatesTabWrapper({ clientId, clientName }: { clientId: string; clien
           <h2 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>Content Templates</h2>
         </CardHeader>
         <CardContent>
-          <p style={{ color: "var(--text-muted)" }}>Templates management coming soon.</p>
+          <div className="flex flex-col gap-3">
+            <div className="p-3 rounded-lg border" style={{ borderColor: "var(--border-soft)", background: "var(--surface)" }}>
+              <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>Instagram Carousel</p>
+              <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>3-slide educational carousel template</p>
+            </div>
+            <div className="p-3 rounded-lg border" style={{ borderColor: "var(--border-soft)", background: "var(--surface)" }}>
+              <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>TikTok Trend Hook</p>
+              <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Short-form video template with trending audio</p>
+            </div>
+            <div className="p-3 rounded-lg border" style={{ borderColor: "var(--border-soft)", background: "var(--surface)" }}>
+              <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>LinkedIn Article</p>
+              <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Professional thought leadership post</p>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>
@@ -591,7 +629,28 @@ function AnalyticsTab({ client }: { client: { id: string; name: string } }) {
           <h2 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>Analytics</h2>
         </CardHeader>
         <CardContent>
-          <p style={{ color: "var(--text-muted)" }}>Analytics coming soon.</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="p-4 rounded-lg" style={{ background: "var(--subtle)" }}>
+              <p className="text-xs" style={{ color: "var(--text-muted)" }}>TOTAL REACH</p>
+              <p className="text-2xl font-bold mt-2" style={{ color: "var(--text-primary)" }}>-</p>
+              <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Across all platforms</p>
+            </div>
+            <div className="p-4 rounded-lg" style={{ background: "var(--subtle)" }}>
+              <p className="text-xs" style={{ color: "var(--text-muted)" }}>ENGAGEMENT RATE</p>
+              <p className="text-2xl font-bold mt-2" style={{ color: "var(--text-primary)" }}>-</p>
+              <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Average engagement</p>
+            </div>
+            <div className="p-4 rounded-lg" style={{ background: "var(--subtle)" }}>
+              <p className="text-xs" style={{ color: "var(--text-muted)" }}>TOTAL POSTS</p>
+              <p className="text-2xl font-bold mt-2" style={{ color: "var(--text-primary)" }}>-</p>
+              <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Published content</p>
+            </div>
+            <div className="p-4 rounded-lg" style={{ background: "var(--subtle)" }}>
+              <p className="text-xs" style={{ color: "var(--text-muted)" }}>FOLLOWER GROWTH</p>
+              <p className="text-2xl font-bold mt-2" style={{ color: "var(--text-primary)" }}>-</p>
+              <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>This period</p>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>
@@ -642,7 +701,21 @@ function TeamTab({ client }: { client: { id: string; name: string } }) {
           <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Team Assignment</h3>
         </CardHeader>
         <CardContent>
-          <p style={{ color: "var(--text-muted)" }}>Team assignment feature coming soon.</p>
+          <div className="flex flex-col gap-3">
+            <p className="text-xs" style={{ color: "var(--text-muted)" }}>Assign team members to manage this client's account and content strategy.</p>
+            <div className="p-3 rounded-lg border" style={{ borderColor: "var(--border-soft)", background: "var(--surface)" }}>
+              <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>Account Manager</p>
+              <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Primary point of contact for the client</p>
+            </div>
+            <div className="p-3 rounded-lg border" style={{ borderColor: "var(--border-soft)", background: "var(--surface)" }}>
+              <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>Content Strategist</p>
+              <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Develops brand strategy and content plans</p>
+            </div>
+            <div className="p-3 rounded-lg border" style={{ borderColor: "var(--border-soft)", background: "var(--surface)" }}>
+              <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>Content Creator</p>
+              <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Creates and designs social media content</p>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>

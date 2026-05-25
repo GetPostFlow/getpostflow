@@ -13,3 +13,4 @@ package-lock.json
 .vercel
 .env*.local
 apps/web/.env.production
+.env*

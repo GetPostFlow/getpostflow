@@ -8,12 +8,18 @@ importers:
 
   .:
     dependencies:
+      '@neondatabase/serverless':
+        specifier: ^1.1.0
+        version: 1.1.0
       dotenv:
         specifier: ^17.4.2
         version: 17.4.2
       dotenv-cli:
         specifier: ^11.0.0
         version: 11.0.0
+      drizzle-orm:
+        specifier: ^0.44.7
+        version: 0.44.7(@neondatabase/serverless@1.1.0)(@upstash/redis@1.38.0)(pg@8.21.0)
     devDependencies:
       '@tailwindcss/postcss':
         specifier: ^4.1.11
@@ -39,6 +45,9 @@ importers:
       ts-node:
         specifier: ^10.9.2
         version: 10.9.2(@swc/core@1.15.33)(@types/node@22.19.19)(typescript@5.9.3)
+      tsx:
+        specifier: ^4.19.4
+        version: 4.22.3
       turbo:
         specifier: ^2.0.14
         version: 2.9.14
