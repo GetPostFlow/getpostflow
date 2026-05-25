@@ -1,90 +1,41 @@
-import { createDb } from "@getpostflow/db";
-import { and, eq, gte, lte } from "drizzle-orm";
-import { contentTable } from "@getpostflow/db/schema";
-import { auth } from "@getpostflow/auth";
+import { createDb, contentItems } from "@getpostflow/db";
+import { eq, and } from "drizzle-orm";
+import { requireOrgAuth } from "@/lib/auth-org";
 import { redirect } from "next/navigation";
 
-export const metadata = {
-  title: "Content Calendar",
-  description: "View all scheduled content across your clients",
-};
-
 export default async function ContentCalendarPage() {
-  const { orgId } = await auth();
-  if (!orgId) redirect("/");
+  const { orgRow } = await requireOrgAuth();
+  if (!orgRow) redirect("/sign-in");
 
   const db = createDb();
-  const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
   const scheduledContent = await db
     .select()
-    .from(contentTable)
+    .from(contentItems)
     .where(
       and(
-        eq(contentTable.orgId, orgId),
-        gte(contentTable.scheduledAt, monthStart),
-        lte(contentTable.scheduledAt, monthEnd)
+        eq(contentItems.orgId, orgRow.id),
+        eq(contentItems.status, "scheduled")
       )
-    )
-    .orderBy(contentTable.scheduledAt);
-
-  const contentByDate = scheduledContent.reduce(
-    (acc: any, content: any) => {
-      const date = content.scheduledAt?.toISOString().split("T")[0] || "unscheduled";
-      if (!acc[date]) acc[date] = [];
-      acc[date].push(content);
-      return acc;
-    },
-    {} as Record<string, any[]>
-  );
+    );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold">Content Calendar</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          View all scheduled content across your clients
+          Global view of all scheduled posts across your agency.
         </p>
       </div>
 
-      <div className="grid gap-4">
-        {Object.entries(contentByDate).length === 0 ? (
-          <div className="rounded-lg border border-border bg-card p-8 text-center">
-            <p className="text-muted-foreground">No scheduled content for this month</p>
-          </div>
-        ) : (
-          Object.entries(contentByDate)
-            .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
-            .map(([date, contents]) => (
-              <div key={date} className="rounded-lg border border-border bg-card p-4">
-                <h3 className="font-semibold mb-3">
-                  {date === "unscheduled" ? "Unscheduled" : new Date(date).toLocaleDateString("en-US", {
-                    weekday: "long",
-                    month: "long",
-                    day: "numeric",
-                  })}
-                </h3>
-                <div className="space-y-2">
-                  {(contents as any[]).map((content: any) => (
-                    <div
-                      key={content.id}
-                      className="flex items-center justify-between p-3 bg-secondary rounded-md"
-                    >
-                      <div>
-                        <p className="text-sm font-medium">{content.title}</p>
-                        <p className="text-xs text-muted-foreground">{content.platform}</p>
-                      </div>
-                      <span className="text-xs px-2 py-1 rounded bg-primary text-primary-foreground">
-                        {content.status}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))
-        )}
+      <div className="p-12 bg-card border border-border border-dashed rounded-xl flex flex-col items-center justify-center text-center">
+        <div className="w-12 h-12 bg-secondary rounded-full flex items-center justify-center mb-4">
+          📅
+        </div>
+        <h3 className="font-semibold">Calendar View Coming Soon</h3>
+        <p className="text-sm text-muted-foreground mt-1 max-w-xs">
+          We are currently building the interactive calendar view. You have {scheduledContent.length} posts scheduled.
+        </p>
       </div>
     </div>
   );

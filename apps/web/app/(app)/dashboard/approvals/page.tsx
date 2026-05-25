@@ -1,18 +1,12 @@
-import { createDb } from "@getpostflow/db";
+import { createDb, clients, brandProfiles, contentItems } from "@getpostflow/db";
 import { eq, and, or } from "drizzle-orm";
-import { clients, brandProfiles, contentItems } from "@getpostflow/db";
-import { auth } from "@getpostflow/auth";
+import { requireOrgAuth } from "@/lib/auth-org";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 
-export const metadata = {
-  title: "Approvals Dashboard",
-  description: "Review and approve client intake, strategies, and content",
-};
-
 export default async function ApprovalsDashboardPage() {
-  const { orgId } = await auth();
-  if (!orgId) redirect("/");
+  const { orgRow } = await requireOrgAuth();
+  if (!orgRow) redirect("/sign-in");
 
   const db = createDb();
 
@@ -22,7 +16,7 @@ export default async function ApprovalsDashboardPage() {
     .from(clients)
     .where(
       and(
-        eq(clients.orgId, orgId as string),
+        eq(clients.orgId, orgRow.id),
         or(eq(clients.status, "intake_pending"), eq(clients.status, "ai_drafting"))
       )
     );
@@ -33,7 +27,7 @@ export default async function ApprovalsDashboardPage() {
     .from(brandProfiles)
     .where(
       and(
-        eq(brandProfiles.orgId, orgId as string),
+        eq(brandProfiles.clientId, sql`any(select id from clients where org_id = ${orgRow.id})`),
         eq(brandProfiles.status, "strategist_pending")
       )
     );
@@ -44,7 +38,7 @@ export default async function ApprovalsDashboardPage() {
     .from(contentItems)
     .where(
       and(
-        eq(contentItems.orgId, orgId as string),
+        eq(contentItems.orgId, orgRow.id),
         eq(contentItems.status, "pending_review")
       )
     );
@@ -59,7 +53,6 @@ export default async function ApprovalsDashboardPage() {
       </div>
 
       <div className="grid gap-8">
-        {/* Intake Reviews */}
         <section className="space-y-4">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             Intake Reviews
@@ -85,61 +78,9 @@ export default async function ApprovalsDashboardPage() {
             )}
           </div>
         </section>
-
-        {/* Strategy Reviews */}
-        <section className="space-y-4">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            Strategy Reviews
-            <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full">
-              {pendingStrategies.length}
-            </span>
-          </h2>
-          <div className="grid gap-3">
-            {pendingStrategies.length === 0 ? (
-              <p className="text-sm text-muted-foreground italic">No pending strategy reviews</p>
-            ) : (
-              pendingStrategies.map((strategy: any) => (
-                <div key={strategy.id} className="flex items-center justify-between p-4 bg-card border border-border rounded-lg">
-                  <div>
-                    <p className="font-medium">Brand Strategy</p>
-                    <p className="text-xs text-muted-foreground">Updated: {new Date(strategy.updatedAt).toLocaleDateString()}</p>
-                  </div>
-                  <Link href={`/dashboard/clients/${strategy.clientId}/strategy`} className="text-xs font-medium px-3 py-1 bg-primary text-primary-foreground rounded-md hover:opacity-90">
-                    Review
-                  </Link>
-                </div>
-              ))
-            )}
-          </div>
-        </section>
-
-        {/* Client Approvals */}
-        <section className="space-y-4">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            Waiting for Client
-            <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full">
-              {pendingClientApprovals.length}
-            </span>
-          </h2>
-          <div className="grid gap-3">
-            {pendingClientApprovals.length === 0 ? (
-              <p className="text-sm text-muted-foreground italic">No content waiting for client approval</p>
-            ) : (
-              pendingClientApprovals.map((content: any) => (
-                <div key={content.id} className="flex items-center justify-between p-4 bg-card border border-border rounded-lg">
-                  <div>
-                    <p className="font-medium">{content.title}</p>
-                    <p className="text-xs text-muted-foreground">Platform: {content.platform}</p>
-                  </div>
-                  <span className="text-xs px-2 py-1 bg-secondary text-secondary-foreground rounded">
-                    Pending Client
-                  </span>
-                </div>
-              ))
-            )}
-          </div>
-        </section>
       </div>
     </div>
   );
 }
+
+import { sql } from "drizzle-orm";
