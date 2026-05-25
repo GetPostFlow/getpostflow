@@ -88,3 +88,4 @@ export * from "./learning-loop";
 
 export * from "./manus-client";
 export * from "./manus-image-video";
+export * from "./community-funnel";
