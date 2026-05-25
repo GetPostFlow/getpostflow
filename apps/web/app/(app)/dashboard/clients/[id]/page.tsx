@@ -78,7 +78,7 @@ interface Props {
   searchParams: Promise<{ tab?: string }>;
 }
 
-type Tab = "overview" | "intake" | "strategy" | "content" | "portal" | "accounts" | "analytics" | "activity" | "team";
+type Tab = "overview" | "intake" | "strategy" | "content" | "portal" | "brand-kit" | "templates" | "accounts" | "analytics" | "activity" | "team";
 
 const TABS: { id: Tab; label: string; description: string }[] = [
   { id: "overview", label: "Client Overview", description: "Client info, status, and connected accounts" },
@@ -86,6 +86,8 @@ const TABS: { id: Tab; label: string; description: string }[] = [
   { id: "strategy", label: "Strategy", description: "AI-generated brand strategy with approval status" },
   { id: "content", label: "Content", description: "Content calendar and posts for this client" },
   { id: "portal", label: "Portal Preview", description: "View exactly what your client sees" },
+  { id: "brand-kit", label: "Brand Kit", description: "Colors, fonts, logos, and voice tone" },
+  { id: "templates", label: "Templates", description: "Content templates for this client" },
   { id: "accounts", label: "Accounts", description: "This client's connected social media accounts" },
   { id: "analytics", label: "Analytics", description: "Performance metrics for this client" },
   { id: "activity", label: "Activity", description: "Audit log of all actions for this client" },
@@ -249,6 +251,12 @@ export default async function ClientWorkspacePage({ params, searchParams }: Prop
         )}
         {activeTab === "portal" && (
           <PortalTab client={client} />
+        )}
+        {activeTab === "brand-kit" && (
+          <BrandKitTabWrapper clientId={client.id} />
+        )}
+        {activeTab === "templates" && (
+          <TemplatesTabWrapper clientId={client.id} clientName={client.name} />
         )}
         {activeTab === "accounts" && (
           <AccountsTab client={client} />
@@ -1056,6 +1064,86 @@ function ActivityTab({
           </div>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function BrandKitTabWrapper({ clientId }: { clientId: string }) {
+  return (
+    <div className="flex flex-col gap-6">
+      <div>
+        <h2 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>Brand Kit</h2>
+        <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>
+          Colors, fonts, logos, voice/tone, and style guidelines.
+        </p>
+      </div>
+      <div
+        className="rounded-2xl border p-4 text-xs"
+        style={{ borderColor: "var(--border-soft)", background: "var(--subtle)", color: "var(--text-muted)" }}
+      >
+        Open the full Brand Kit editor via the link below.
+      </div>
+      <a
+        href={`/dashboard/clients/${clientId}/brand-kit`}
+        className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-white w-fit transition hover:opacity-90"
+        style={{ background: "var(--brand-primary)" }}
+      >
+        Open Brand Kit Editor
+      </a>
+    </div>
+  );
+}
+
+function TemplatesTabWrapper({ clientId, clientName }: { clientId: string; clientName: string }) {
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>Content Templates</h2>
+          <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>
+            Reusable caption templates for {clientName}.
+          </p>
+        </div>
+        <a
+          href={`/dashboard/clients/${clientId}/brand-kit`}
+          className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition hover:opacity-90"
+          style={{ border: "1px solid var(--border-soft)", color: "var(--text-secondary)" }}
+        >
+          Manage Templates
+        </a>
+      </div>
+      <TemplatesLoader clientId={clientId} />
+    </div>
+  );
+}
+
+function TemplatesLoader({ clientId }: { clientId: string }) {
+  return (
+    <div className="rounded-2xl border overflow-hidden" style={{ borderColor: "var(--border-soft)" }}>
+      <div className="p-4">
+        <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+          Templates are managed in the Brand Kit section. Use the button above to view and edit all content templates for this client.
+        </p>
+        <div className="mt-3 flex flex-col gap-2">
+          {[
+            "Product Spotlight Post",
+            "Behind The Scenes Reel",
+            "Community Event Post",
+          ].map((name) => (
+            <div key={name} className="flex items-center gap-3 rounded-xl p-3" style={{ background: "var(--subtle)" }}>
+              <div className="h-2 w-2 rounded-full flex-shrink-0" style={{ background: "var(--brand-primary)" }} />
+              <span className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>{name}</span>
+            </div>
+          ))}
+        </div>
+        <a
+          href={`/dashboard/clients/${clientId}/brand-kit`}
+          className="mt-3 inline-flex text-xs font-medium transition hover:opacity-70"
+          style={{ color: "var(--brand-primary)" }}
+        >
+          View all templates →
+        </a>
+      </div>
     </div>
   );
 }

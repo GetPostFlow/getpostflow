@@ -82,9 +82,9 @@ export default async function PortalBillingPage({ params, searchParams }: Props)
             <p style={{ fontSize: "16px", fontWeight: 600, color: "#1a1a1a" }}>{nextBilling}</p>
           </div>
         </div>
-        <div style={{ marginTop: "16px" }}>
+        <div style={{ marginTop: "16px", display: "flex", gap: "10px", flexWrap: "wrap" }}>
           <a
-            href={`/api/stripe/portal?clientId=${client.id}`}
+            href={`mailto:billing@getpostflow.com?subject=Update payment method - ${client.name}`}
             style={{
               display: "inline-flex",
               alignItems: "center",
@@ -100,6 +100,61 @@ export default async function PortalBillingPage({ params, searchParams }: Props)
           >
             Update Payment Method
           </a>
+          <a
+            href={`mailto:billing@getpostflow.com?subject=Cancel subscription - ${client.name}`}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              background: "transparent",
+              color: "#6b7280",
+              borderRadius: "12px",
+              padding: "10px 18px",
+              fontSize: "13px",
+              fontWeight: 500,
+              textDecoration: "none",
+              border: "1px solid #e5e7eb",
+            }}
+          >
+            Request Cancellation
+          </a>
+        </div>
+      </div>
+
+      {/* Refund & cancellation policy — blueprint §4.2 */}
+      <div
+        style={{
+          background: "#f9fafb",
+          border: "1px solid #e5e7eb",
+          borderRadius: "16px",
+          padding: "18px 20px",
+          marginBottom: "20px",
+        }}
+      >
+        <p style={{ fontSize: "13px", fontWeight: 600, color: "#374151", marginBottom: "8px" }}>
+          💳 Billing &amp; Cancellation Policy
+        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+          <p style={{ fontSize: "13px", color: "#6b7280", lineHeight: 1.6, margin: 0 }}>
+            <strong style={{ color: "#374151" }}>14-Day Money-Back Guarantee:</strong>{" "}
+            If you are not satisfied within the first 14 days of your subscription, email{" "}
+            <a href="mailto:billing@getpostflow.com" style={{ color: "#2F5D62" }}>billing@getpostflow.com</a>{" "}
+            for a full refund — no questions asked.
+          </p>
+          <p style={{ fontSize: "13px", color: "#6b7280", lineHeight: 1.6, margin: 0 }}>
+            <strong style={{ color: "#374151" }}>Cancellation:</strong>{" "}
+            Cancel anytime by emailing{" "}
+            <a href="mailto:billing@getpostflow.com" style={{ color: "#2F5D62" }}>billing@getpostflow.com</a>
+            {" "}with subject &quot;Cancel subscription — {client.name}&quot;.
+            Your service continues until the end of the current billing period.
+          </p>
+          <p style={{ fontSize: "13px", color: "#6b7280", lineHeight: 1.6, margin: 0 }}>
+            <strong style={{ color: "#374151" }}>Billing questions?</strong>{" "}
+            Reach us at{" "}
+            <a href="mailto:billing@getpostflow.com" style={{ color: "#2F5D62" }}>billing@getpostflow.com</a>
+            {" "}or visit our{" "}
+            <a href="https://getpostflow.com/terms" style={{ color: "#2F5D62" }}>Terms of Service</a>.
+          </p>
         </div>
       </div>
 

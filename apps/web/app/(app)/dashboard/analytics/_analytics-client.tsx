@@ -47,7 +47,27 @@ export default function AnalyticsDashboardClient() {
         </div>
       </div>
 
-      {loading && <p className="text-sm" style={{ color: "var(--text-muted)" }}>Loading…</p>}
+      {loading && (
+        <div className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <Card key={i}><CardContent className="py-4">
+                <div className="h-3 w-16 rounded animate-pulse mb-3" style={{ background: "var(--subtle)" }} />
+                <div className="h-7 w-12 rounded animate-pulse" style={{ background: "var(--subtle)" }} />
+              </CardContent></Card>
+            ))}
+          </div>
+          <Card><CardContent className="py-4 flex flex-col gap-3">
+            <div className="h-4 w-32 rounded animate-pulse" style={{ background: "var(--subtle)" }} />
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center justify-between">
+                <div className="h-3 w-20 rounded animate-pulse" style={{ background: "var(--subtle)" }} />
+                <div className="h-3 w-40 rounded animate-pulse" style={{ background: "var(--subtle)" }} />
+              </div>
+            ))}
+          </CardContent></Card>
+        </div>
+      )}
 
       {!loading && data && (
         <>
@@ -73,7 +93,15 @@ export default function AnalyticsDashboardClient() {
           <Card>
             <CardContent className="py-4 flex flex-col gap-3">
               <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Platform Breakdown</h3>
-              {Object.entries(data.totalsByPlatform).length === 0 && <p className="text-xs" style={{ color: "var(--text-muted)" }}>No platform data yet.</p>}
+              {Object.entries(data.totalsByPlatform).length === 0 && (
+                <div className="py-8 text-center">
+                  <div className="text-3xl mb-2">📊</div>
+                  <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>No platform data yet</p>
+                  <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
+                    Analytics will populate once you have connected accounts and published content.
+                  </p>
+                </div>
+              )}
               {Object.entries(data.totalsByPlatform).map(([platform, m]) => (
                 <div key={platform} className="flex items-center justify-between">
                   <span className="text-xs capitalize" style={{ color: "var(--text-primary)" }}>{platform}</span>

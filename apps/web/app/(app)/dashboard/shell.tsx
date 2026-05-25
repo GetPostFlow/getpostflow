@@ -111,6 +111,16 @@ const NAV_ITEMS: NavItem[] = [
     ),
   },
   {
+    id: "accounts",
+    label: "Accounts",
+    href: "/dashboard/accounts",
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M8 1a3 3 0 1 0 0 6A3 3 0 0 0 8 1zM4 9a4 4 0 0 0-4 4v1h16v-1a4 4 0 0 0-4-4H4z" opacity="0.9" />
+      </svg>
+    ),
+  },
+  {
     id: "settings",
     label: "Settings",
     href: "/dashboard/settings/org",
@@ -133,13 +143,20 @@ function getActiveId(pathname: string): string {
   if (pathname.startsWith("/dashboard/tasks")) return "tasks";
   if (pathname.startsWith("/dashboard/community")) return "community";
   if (pathname.startsWith("/dashboard/analytics")) return "analytics";
+  if (pathname.startsWith("/dashboard/accounts")) return "accounts";
   if (pathname.startsWith("/dashboard/settings") || pathname.startsWith("/dashboard/billing")) return "settings";
   return "overview";
 }
 
 function getPageTitle(pathname: string): string {
   if (pathname === "/dashboard") return "Overview";
-  if (pathname.match(/^\/dashboard\/clients\/[^/]+/) && !pathname.includes("/content") && !pathname.includes("/intake") && !pathname.includes("/strategy") && !pathname.includes("/assets") && !pathname.includes("/reports")) {
+  if (pathname.match(/^\/dashboard\/clients\/[^/]+\/brand-kit/)) return "Brand Kit";
+  if (pathname.match(/^\/dashboard\/clients\/[^/]+\/assets/)) return "Asset Library";
+  if (pathname.match(/^\/dashboard\/clients\/[^/]+\/reports/)) return "Reports";
+  if (pathname.match(/^\/dashboard\/clients\/[^/]+\/content/)) return "Content Calendar";
+  if (pathname.match(/^\/dashboard\/clients\/[^/]+\/intake/)) return "Brand Intake";
+  if (pathname.match(/^\/dashboard\/clients\/[^/]+\/strategy/)) return "Strategy Review";
+  if (pathname.match(/^\/dashboard\/clients\/[^/]+/) && !pathname.includes("/content") && !pathname.includes("/intake") && !pathname.includes("/strategy") && !pathname.includes("/assets") && !pathname.includes("/reports") && !pathname.includes("/brand-kit")) {
     return "Client Workspace";
   }
   if (pathname.startsWith("/dashboard/clients/new")) return "New Client";
@@ -153,6 +170,7 @@ function getPageTitle(pathname: string): string {
   if (pathname.startsWith("/dashboard/community")) return "Community Management";
   if (pathname.startsWith("/dashboard/analytics")) return "Analytics";
   if (pathname.startsWith("/dashboard/billing")) return "Billing";
+  if (pathname.startsWith("/dashboard/accounts")) return "Connected Accounts";
   if (pathname.startsWith("/dashboard/settings/team")) return "Team";
   if (pathname.startsWith("/dashboard/settings/org")) return "Organization";
   if (pathname.startsWith("/dashboard/settings")) return "Settings";
