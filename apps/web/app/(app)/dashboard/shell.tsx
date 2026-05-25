@@ -381,7 +381,6 @@ export default function DashboardShell({
       <div className="flex flex-1 flex-col min-w-0">
         <TopBar
           title={title}
-          left={<GlobalSearch />}
           right={
             <div className="flex items-center gap-3">
               {clients.length > 0 && (
