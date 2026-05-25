@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Search } from "lucide-react";
 
 export function GlobalSearch() {
   const [isOpen, setIsOpen] = useState(false);
@@ -10,7 +9,7 @@ export function GlobalSearch() {
   return (
     <div className="flex-1 max-w-md">
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground text-xs">🔍</span>
         <input
           type="text"
           placeholder="Search clients, content, messages..."

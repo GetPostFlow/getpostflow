@@ -110,15 +110,9 @@ export async function cancelSubscription() {
     .update(orgSubscriptions)
     .set({
       status: "canceled",
-      canceledAt: now,
-      refundProcessed: canRefund,
+      updatedAt: now,
     })
     .where(eq(orgSubscriptions.id, subscription.id));
-
-  // TODO: Call Stripe API to cancel subscription if stripeSubscriptionId exists
-  // if (subscription.stripeSubscriptionId) {
-  //   await stripe.subscriptions.cancel(subscription.stripeSubscriptionId);
-  // }
 
   return {
     success: true,
@@ -161,13 +155,6 @@ export async function downgradeSubscription(newPlanCode: string) {
       updatedAt: new Date(),
     })
     .where(eq(orgSubscriptions.id, subscription.id));
-
-  // TODO: Call Stripe API to update subscription if stripeSubscriptionId exists
-  // if (subscription.stripeSubscriptionId) {
-  //   await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
-  //     items: [{ id: subscription.stripeSubscriptionItemId, price: stripePriceIdForPlan }],
-  //   });
-  // }
 
   return {
     success: true,
