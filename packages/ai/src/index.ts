@@ -87,3 +87,4 @@ export * from "./learning-loop";
 // ─── Blueprint rebuild: Manus AI client ───────────────────────────────────────
 
 export * from "./manus-client";
+export * from "./manus-image-video";
