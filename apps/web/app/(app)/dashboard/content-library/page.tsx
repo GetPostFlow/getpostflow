@@ -1,7 +1,7 @@
-import { db } from "@getpostflow/db";
+import { createDb } from "@getpostflow/db";
 import { eq } from "drizzle-orm";
 import { brandKitTable } from "@getpostflow/db/schema";
-import { getOrgFromAuth } from "@getpostflow/auth/server";
+import { auth } from "@getpostflow/auth";
 import { redirect } from "next/navigation";
 
 export const metadata = {
@@ -10,13 +10,14 @@ export const metadata = {
 };
 
 export default async function ContentLibraryPage() {
-  const org = await getOrgFromAuth();
-  if (!org) redirect("/");
+  const { orgId } = await auth();
+  if (!orgId) redirect("/");
 
+  const db = createDb();
   const brandKits = await db
     .select()
     .from(brandKitTable)
-    .where(eq(brandKitTable.orgId, org.id));
+    .where(eq(brandKitTable.orgId, orgId));
 
   return (
     <div className="space-y-6">
@@ -37,7 +38,7 @@ export default async function ContentLibraryPage() {
                 <p className="text-muted-foreground">No brand assets uploaded yet</p>
               </div>
             ) : (
-              brandKits.map((kit) => (
+              brandKits.map((kit: any) => (
                 <div key={kit.id} className="rounded-lg border border-border bg-secondary p-4">
                   <div className="aspect-square bg-muted rounded-md mb-3 flex items-center justify-center">
                     <span className="text-muted-foreground text-sm">Asset Preview</span>

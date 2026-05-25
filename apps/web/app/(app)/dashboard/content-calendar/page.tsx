@@ -66,7 +66,7 @@ export default async function ContentCalendarPage() {
                   })}
                 </h3>
                 <div className="space-y-2">
-                  {contents.map((content) => (
+                  {((contents as any[]).map((content: any) => (
                     <div
                       key={content.id}
                       className="flex items-center justify-between p-3 bg-secondary rounded-md"

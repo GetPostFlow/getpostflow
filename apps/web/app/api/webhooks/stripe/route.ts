@@ -1,5 +1,5 @@
 import { stripe } from "@getpostflow/billing";
-import { db } from "@getpostflow/db";
+import { createDb } from "@getpostflow/db";
 import { subscriptionTable, clientTable } from "@getpostflow/db/schema";
 import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
@@ -12,7 +12,8 @@ export async function POST(req: Request) {
   }
 
   const body = await req.text();
-  const signature = headers().get("stripe-signature");
+  const headersList = await headers();
+  const signature = headersList.get("stripe-signature");
 
   if (!signature) {
     return new Response("Missing stripe-signature header", { status: 400 });
@@ -27,25 +28,27 @@ export async function POST(req: Request) {
     return new Response("Webhook signature verification failed", { status: 400 });
   }
 
+  const db = createDb();
+
   try {
     switch (event.type) {
       case "checkout.session.completed": {
-        await handleCheckoutSessionCompleted(event.data.object as any);
+        await handleCheckoutSessionCompleted(db, event.data.object as any);
         break;
       }
 
       case "customer.subscription.created": {
-        await handleSubscriptionCreated(event.data.object as any);
+        await handleSubscriptionCreated(db, event.data.object as any);
         break;
       }
 
       case "customer.subscription.updated": {
-        await handleSubscriptionUpdated(event.data.object as any);
+        await handleSubscriptionUpdated(db, event.data.object as any);
         break;
       }
 
       case "customer.subscription.deleted": {
-        await handleSubscriptionDeleted(event.data.object as any);
+        await handleSubscriptionDeleted(db, event.data.object as any);
         break;
       }
 
@@ -70,7 +73,7 @@ export async function POST(req: Request) {
   }
 }
 
-async function handleCheckoutSessionCompleted(session: any) {
+async function handleCheckoutSessionCompleted(db: any, session: any) {
   console.log("[stripe-webhook] Checkout session completed:", session.id);
 
   const clientId = session.metadata?.clientId;
@@ -106,7 +109,7 @@ async function handleCheckoutSessionCompleted(session: any) {
   console.log("[stripe-webhook] Client activated and subscription created");
 }
 
-async function handleSubscriptionCreated(subscription: any) {
+async function handleSubscriptionCreated(db: any, subscription: any) {
   console.log("[stripe-webhook] Subscription created:", subscription.id);
 
   const clientId = subscription.metadata?.clientId;
@@ -129,7 +132,7 @@ async function handleSubscriptionCreated(subscription: any) {
   });
 }
 
-async function handleSubscriptionUpdated(subscription: any) {
+async function handleSubscriptionUpdated(db: any, subscription: any) {
   console.log("[stripe-webhook] Subscription updated:", subscription.id);
 
   await db
@@ -142,7 +145,7 @@ async function handleSubscriptionUpdated(subscription: any) {
     .where(eq(subscriptionTable.stripeSubscriptionId, subscription.id));
 }
 
-async function handleSubscriptionDeleted(subscription: any) {
+async function handleSubscriptionDeleted(db: any, subscription: any) {
   console.log("[stripe-webhook] Subscription deleted:", subscription.id);
 
   await db
@@ -156,10 +159,8 @@ async function handleSubscriptionDeleted(subscription: any) {
 
 async function handleInvoicePaymentSucceeded(invoice: any) {
   console.log("[stripe-webhook] Invoice payment succeeded:", invoice.id);
-  // Could trigger email notification here
 }
 
 async function handleInvoicePaymentFailed(invoice: any) {
   console.log("[stripe-webhook] Invoice payment failed:", invoice.id);
-  // Could trigger retry or notification here
 }

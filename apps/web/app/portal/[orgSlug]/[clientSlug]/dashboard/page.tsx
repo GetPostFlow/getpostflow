@@ -1,4 +1,4 @@
-import { db } from "@getpostflow/db";
+import { createDb } from "@getpostflow/db";
 import { and, eq } from "drizzle-orm";
 import {
   clientTable,
@@ -177,7 +177,7 @@ export default async function ClientPortalDashboard({
                   </p>
                 </div>
                 <span className="text-xs px-2 py-1 rounded bg-primary text-primary-foreground">
-                  {item.status}
+                  {item.status as string}
                 </span>
               </div>
             ))}

@@ -1,4 +1,4 @@
-import { db } from "@getpostflow/db";
+import { createDb } from "@getpostflow/db";
 import { eq } from "drizzle-orm";
 import { subscriptionTable } from "@getpostflow/db/schema";
 import { getPortalClient } from "@getpostflow/auth/server";

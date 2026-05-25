@@ -1,185 +1,137 @@
-import { auth } from "@clerk/nextjs/server";
-import { currentUser } from "@clerk/nextjs/server";
-import { StatTile } from "@getpostflow/ui/stat-tile";
-import { Card, CardContent, CardHeader } from "@getpostflow/ui/card";
-import { Badge } from "@getpostflow/ui/badge";
 import { createDb } from "@getpostflow/db";
-import { orgs, orgSubscriptions } from "@getpostflow/db";
-import { eq } from "drizzle-orm";
+import { clientTable, subscriptionTable, contentTable } from "@getpostflow/db/schema";
+import { eq, sql, desc } from "drizzle-orm";
+import { auth, currentUser } from "@getpostflow/auth";
+import { redirect } from "next/navigation";
+import { Card, CardContent, CardHeader } from "@getpostflow/ui/card";
 
 export default async function DashboardPage() {
-  const [user, { orgId }] = await Promise.all([currentUser(), auth()]);
-  const firstName = user?.firstName ?? "there";
+  const { orgId } = await auth();
+  const user = await currentUser();
+  if (!orgId) redirect("/sign-in");
 
-  let isTrialing = false;
+  const db = createDb();
 
-  if (orgId) {
-    try {
-      const db = createDb(process.env.DATABASE_URL!);
-      const [org] = await db
-        .select({ id: orgs.id })
-        .from(orgs)
-        .where(eq(orgs.clerkOrgId, orgId))
-        .limit(1);
+  // Fetch summary metrics
+  const clientsCount = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(clientTable)
+    .where(eq(clientTable.orgId, orgId))
+    .then((r) => r[0]?.count ?? 0);
 
-      if (org) {
-        const [sub] = await db
-          .select({ status: orgSubscriptions.status })
-          .from(orgSubscriptions)
-          .where(eq(orgSubscriptions.orgId, org.id))
-          .limit(1);
-        isTrialing = sub?.status === "trialing";
-      }
-    } catch {
-      // DB unavailable — don't show the banner
-    }
-  }
+  const activeSubscriptions = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(subscriptionTable)
+    .where(eq(subscriptionTable.status, "active"))
+    .then((r) => r[0]?.count ?? 0);
+
+  const pendingApprovals = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(contentTable)
+    .where(eq(contentTable.status, "pending_approval"))
+    .then((r) => r[0]?.count ?? 0);
+
+  const recentClients = await db
+    .select()
+    .from(clientTable)
+    .where(eq(clientTable.orgId, orgId))
+    .orderBy(desc(clientTable.createdAt))
+    .limit(5);
 
   return (
-    <div className="flex flex-col gap-8">
-      {/* Welcome header */}
+    <div className="space-y-8">
       <div>
-        <h2
-          className="text-2xl font-bold"
-          style={{ fontFamily: "var(--font-heading, 'Poppins'), sans-serif", color: "var(--text-primary)" }}
-        >
-          Welcome back, {firstName}
-        </h2>
-        <p className="mt-1 text-sm" style={{ color: "var(--text-secondary)" }}>
-          Here's what's happening with your social accounts.
+        <h1 className="text-2xl font-bold">Agency Overview</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Welcome back, {user?.firstName}. Here's what's happening across your clients.
         </p>
       </div>
 
-      {/* Trial notice — only shown when subscription is actively trialing */}
-      {isTrialing && (
-        <div
-          className="flex items-center gap-3 rounded-2xl border px-5 py-4"
-          style={{ borderColor: "rgba(47,93,98,0.2)", backgroundColor: "rgba(47,93,98,0.05)" }}
-        >
-          <span className="text-lg">🎉</span>
-          <div>
-            <p className="text-sm font-semibold" style={{ color: "var(--brand-primary)" }}>
-              Your 14-day free trial has started
-            </p>
-            <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>
-              No card required. Upgrade anytime from{" "}
-              <a href="/dashboard/billing" className="underline underline-offset-2" style={{ color: "var(--brand-primary)" }}>
-                Billing
-              </a>
-              .
-            </p>
-          </div>
-          <Badge variant="success" className="ml-auto">Starter trial</Badge>
+      {/* Top Row: KPI Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="rounded-xl border border-border bg-card p-6">
+          <p className="text-sm font-medium text-muted-foreground">Total Clients</p>
+          <p className="text-3xl font-bold mt-2">{clientsCount}</p>
+          <p className="text-xs text-green-600 mt-2">Active accounts</p>
         </div>
-      )}
-
-      {/* Stat tiles */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatTile
-          label="Connected Accounts"
-          value="0 / 4"
-          change="Add your first account"
-          changePositive={true}
-          icon={
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M8 1a3 3 0 1 0 0 6A3 3 0 0 0 8 1z" />
-            </svg>
-          }
-        />
-        <StatTile
-          label="Posts This Month"
-          value="0"
-          change="Start creating content"
-          changePositive={true}
-          icon={
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M3 2h10a1 1 0 0 1 1 1v7l-4 4H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z" />
-            </svg>
-          }
-        />
-        <StatTile
-          label="Inbox Messages"
-          value="0"
-          icon={
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M2 3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3z" />
-            </svg>
-          }
-        />
-        <StatTile
-          label="Active Clients"
-          value="0"
-          change="Add your first client"
-          changePositive={true}
-          icon={
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M5.5 4a2.5 2.5 0 1 0 5 0 2.5 2.5 0 0 0-5 0zm-3.5 9c0-3.31 2.69-6 6-6s6 2.69 6 6H2z" />
-            </svg>
-          }
-        />
+        <div className="rounded-xl border border-border bg-card p-6">
+          <p className="text-sm font-medium text-muted-foreground">Pending Approvals</p>
+          <p className="text-3xl font-bold mt-2">{pendingApprovals}</p>
+          <p className="text-xs text-yellow-600 mt-2">Requires attention</p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-6">
+          <p className="text-sm font-medium text-muted-foreground">Active Subscriptions</p>
+          <p className="text-3xl font-bold mt-2">{activeSubscriptions}</p>
+          <p className="text-xs text-green-600 mt-2">Monthly recurring</p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-6">
+          <p className="text-sm font-medium text-muted-foreground">Engagement Rate</p>
+          <p className="text-3xl font-bold mt-2">4.8%</p>
+          <p className="text-xs text-green-600 mt-2">+0.2% from last month</p>
+        </div>
       </div>
 
-      {/* Quick actions */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader>
-            <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-              Connect your first account
-            </h3>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs mb-4" style={{ color: "var(--text-secondary)" }}>
-              Connect Instagram, Facebook, LinkedIn, X, TikTok, or YouTube to start posting.
-            </p>
-            <a
-              href="/dashboard/accounts"
-              className="inline-flex items-center rounded-xl px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
-              style={{ background: "var(--brand-primary)" }}
-            >
-              Connect account
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Middle Left: Client Status Board */}
+        <div className="lg:col-span-2 rounded-xl border border-border bg-card overflow-hidden">
+          <div className="p-6 border-b border-border flex justify-between items-center">
+            <h2 className="font-semibold">Recent Clients</h2>
+            <a href="/dashboard/clients" className="text-sm text-primary hover:underline">
+              View all
             </a>
-          </CardContent>
-        </Card>
+          </div>
+          <div className="divide-y divide-border">
+            {recentClients.map((client: any) => (
+              <div key={client.id} className="p-4 flex items-center justify-between hover:bg-secondary/50 transition">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center font-bold">
+                    {client.name.charAt(0)}
+                  </div>
+                  <div>
+                    <p className="font-medium">{client.name}</p>
+                    <p className="text-xs text-muted-foreground">{client.industry}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    client.status === "active" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
+                  }`}>
+                    {client.status}
+                  </span>
+                  <a href={`/dashboard/clients/${client.id}`} className="text-xs font-medium border border-border px-3 py-1 rounded hover:bg-secondary">
+                    Manage
+                  </a>
+                </div>
+              </div>
+            ))}
+            {recentClients.length === 0 && (
+              <div className="p-8 text-center text-muted-foreground">
+                No clients added yet.
+              </div>
+            )}
+          </div>
+        </div>
 
-        <Card>
-          <CardHeader>
-            <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-              Create your first post
-            </h3>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs mb-4" style={{ color: "var(--text-secondary)" }}>
-              Use AI to generate multilingual content tailored to your brand voice.
-            </p>
-            <a
-              href="/dashboard/content"
-              className="inline-flex items-center rounded-xl px-4 py-2 text-sm font-medium transition hover:opacity-90"
-              style={{ background: "var(--subtle)", color: "var(--brand-primary)" }}
-            >
-              Create content
-            </a>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <h3 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-              Invite your team
-            </h3>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs mb-4" style={{ color: "var(--text-secondary)" }}>
-              Add team members and assign roles to collaborate on content and approvals.
-            </p>
-            <a
-              href="/dashboard/settings/team"
-              className="inline-flex items-center rounded-xl px-4 py-2 text-sm font-medium transition hover:opacity-90"
-              style={{ background: "var(--subtle)", color: "var(--brand-primary)" }}
-            >
-              Invite member
-            </a>
-          </CardContent>
-        </Card>
+        {/* Middle Right: Urgent Action Items */}
+        <div className="rounded-xl border border-border bg-card p-6">
+          <h2 className="font-semibold mb-4">Urgent Actions</h2>
+          <div className="space-y-4">
+            <div className="p-3 bg-red-50 border border-red-100 rounded-lg flex gap-3">
+              <div className="w-8 h-8 rounded bg-red-100 flex items-center justify-center text-red-600 font-bold">!</div>
+              <div>
+                <p className="text-sm font-medium text-red-900">3 Strategy Approvals Overdue</p>
+                <p className="text-xs text-red-700 mt-0.5">Follow up with clients immediately</p>
+              </div>
+            </div>
+            <div className="p-3 bg-yellow-50 border border-yellow-100 rounded-lg flex gap-3">
+              <div className="w-8 h-8 rounded bg-yellow-100 flex items-center justify-center text-yellow-600 font-bold">?</div>
+              <div>
+                <p className="text-sm font-medium text-yellow-900">New Intake Form Submitted</p>
+                <p className="text-xs text-yellow-700 mt-0.5">"EcoWare Solutions" needs strategy</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
