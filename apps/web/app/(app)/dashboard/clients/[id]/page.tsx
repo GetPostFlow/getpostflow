@@ -1,5 +1,3 @@
-"use client";
-
 import { requireOrgAuth, requireClientAccess, isAdminRole } from "@/lib/auth-org";
 import { createDb } from "@getpostflow/db";
 import { clients, clientBrandStrategies, clientIntakeSubmissions, contentItems, clientAssignments, orgMemberships, users } from "@getpostflow/db";
