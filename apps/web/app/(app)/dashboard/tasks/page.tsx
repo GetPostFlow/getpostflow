@@ -48,7 +48,7 @@ export default async function TasksPage() {
       });
       await db.insert(tasks).values({
         title: `Draft ${cname} May posts`,
-        description: "Create 8–12 posts for the May content calendar.",
+        description: "Create 8-12 posts for the May content calendar.",
         clientId: cid,
         status: "in_progress",
         priority: "medium",

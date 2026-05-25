@@ -29,7 +29,7 @@ const mockVideoResult: VideoResult = {
 
 // ─── strategy_text: anthropic → openai ───────────────────────────────────────
 
-describe("router – strategy_text (anthropic → openai)", () => {
+describe("router - strategy_text (anthropic → openai)", () => {
   it("returns result from anthropic when it succeeds", async () => {
     vi.spyOn(AnthropicProvider.prototype, "generateText").mockResolvedValueOnce(
       mockTextResult
@@ -68,7 +68,7 @@ describe("router – strategy_text (anthropic → openai)", () => {
 
 // ─── caption: gemini → openai ────────────────────────────────────────────────
 
-describe("router – caption (gemini → openai)", () => {
+describe("router - caption (gemini → openai)", () => {
   it("falls back to openai when gemini throws", async () => {
     vi.spyOn(GeminiProvider.prototype, "generateText").mockRejectedValueOnce(
       new Error("gemini unavailable")
@@ -84,7 +84,7 @@ describe("router – caption (gemini → openai)", () => {
 
 // ─── image: fal → replicate ───────────────────────────────────────────────────
 
-describe("router – image (fal → replicate)", () => {
+describe("router - image (fal → replicate)", () => {
   it("returns result from fal when it succeeds", async () => {
     vi.spyOn(FalProvider.prototype, "generateImage").mockResolvedValueOnce(
       mockImageResult
@@ -109,7 +109,7 @@ describe("router – image (fal → replicate)", () => {
 
 // ─── video: runway → veo → sora ──────────────────────────────────────────────
 
-describe("router – video (runway → veo → sora)", () => {
+describe("router - video (runway → veo → sora)", () => {
   it("returns result from runway when it succeeds", async () => {
     vi.spyOn(RunwayProvider.prototype, "generateVideo").mockResolvedValueOnce(
       mockVideoResult

@@ -40,14 +40,14 @@ export interface MessageItem {
 // ── Sample data for demo rendering ───────────────────────────────────────────
 
 export const PLATFORM_META: Record<string, { label: string; icon: string; color: string }> = {
-  facebook:  { label: "Facebook",  icon: "📘", color: "#1877F2" },
-  instagram: { label: "Instagram", icon: "📸", color: "#E1306C" },
-  discord:   { label: "Discord",   icon: "💬", color: "#5865F2" },
-  reddit:    { label: "Reddit",    icon: "🤝", color: "#FF4500" },
-  tiktok:    { label: "TikTok",    icon: "🎵", color: "#000000" },
-  linkedin:  { label: "LinkedIn",  icon: "💼", color: "#0A66C2" },
-  youtube:   { label: "YouTube",   icon: "▶️",  color: "#FF0000" },
-  pinterest: { label: "Pinterest", icon: "📌", color: "#E60023" },
+  facebook:  { label: "Facebook",  icon: "Facebook Icon", color: "#1877F2" },
+  instagram: { label: "Instagram", icon: "Instagram Icon", color: "#E1306C" },
+  discord:   { label: "Discord",   icon: "Discord Icon", color: "#5865F2" },
+  reddit:    { label: "Reddit",    icon: "Reddit Icon", color: "#FF4500" },
+  tiktok:    { label: "TikTok",    icon: "TikTok Icon", color: "#000000" },
+  linkedin:  { label: "LinkedIn",  icon: "LinkedIn Icon", color: "#0A66C2" },
+  youtube:   { label: "YouTube",   icon: "YouTube Icon", color: "#FF0000" },
+  pinterest: { label: "Pinterest", icon: "Pinterest Icon", color: "#E60023" },
 };
 
 export const SENTIMENT_BADGE: Record<MessageSentiment, { label: string; variant: "success" | "muted" | "danger" | "warning" }> = {
@@ -152,7 +152,7 @@ export const DEMO_MESSAGES: Record<string, MessageItem[]> = {
       id: "msg-1a",
       conversationId: "conv-1",
       direction: "inbound",
-      content: "Hi! I just discovered your bakery on Instagram and I'm obsessed! 😍",
+      content: "Hi! I just discovered your bakery on Instagram and I'm obsessed!",
       senderHandle: "@sarah.bakery",
       sentiment: "positive",
       aiSuggestedReply: "Thank you so much! We really appreciate your kind words — it means a lot to us. Stay tuned for more!",

@@ -183,7 +183,7 @@ export default function ContactPage() {
                 Response time
               </p>
               <p className="text-sm" style={{ color: "#3A3A3A" }}>
-                We reply to all messages within one business day (Monday–Friday, 9am–6pm ET).
+                We reply to all messages within one business day (Monday-Friday, 9am-6pm ET).
               </p>
             </div>
           </div>

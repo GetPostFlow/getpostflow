@@ -647,9 +647,9 @@ export const aiLearningInsights = pgTable("ai_learning_insights", {
   contentItemId: uuid("content_item_id").notNull(),
   platform: varchar("platform", { length: 64 }).notNull(),
   contentType: varchar("content_type", { length: 64 }).notNull(),
-  /** 0–1 score predicted by scoreContent() at publish time */
+  /** 0-1 score predicted by scoreContent() at publish time */
   prediction: integer("prediction").notNull().default(0), // stored as integer 0-100
-  /** 0–1 normalised actual engagement score */
+  /** 0-1 normalised actual engagement score */
   actual: integer("actual").notNull().default(0), // stored as integer 0-100
   /** actual − prediction (can be negative), stored as integer -100..100 */
   delta: integer("delta").notNull().default(0),

@@ -35,7 +35,7 @@ export interface PlatformSpecificMetadata {
 }
 
 export interface VideoScriptSection {
-  hook: string;          // 0–3s hook
+  hook: string;          // 0-3s hook
   body: string;          // main content
   callToAction: string;  // CTA
   captionSuggestion: string;
@@ -73,14 +73,14 @@ const PLATFORM_CONFIG: Record<SupportedPlatform, PlatformSpecificMetadata> = {
   facebook: {
     format: "text + link preview",
     maxLength: 63206,
-    bestTime: "Wed/Thu 1–3pm",
+    bestTime: "Wed/Thu 1-3pm",
     linkAllowed: true,
     notes: "Longer conversational posts perform well; include question for engagement",
   },
   instagram: {
     format: "visual-first + caption",
     maxLength: 2200,
-    bestTime: "Tue/Wed 9–11am",
+    bestTime: "Tue/Wed 9-11am",
     aspectRatio: "4:5 or 1:1",
     hashtagLimit: 30,
     linkAllowed: false,
@@ -89,7 +89,7 @@ const PLATFORM_CONFIG: Record<SupportedPlatform, PlatformSpecificMetadata> = {
   tiktok: {
     format: "short-form video script",
     maxLength: 2200,
-    bestTime: "Tue–Fri 7–9pm",
+    bestTime: "Tue-Fri 7-9pm",
     aspectRatio: "9:16",
     hashtagLimit: 10,
     notes: "Hook must land in first 3s; trending audio amplifies reach",
@@ -97,7 +97,7 @@ const PLATFORM_CONFIG: Record<SupportedPlatform, PlatformSpecificMetadata> = {
   youtube: {
     format: "title + description + tags",
     maxLength: 5000,
-    bestTime: "Thu–Sat 12–4pm",
+    bestTime: "Thu-Sat 12-4pm",
     aspectRatio: "16:9",
     linkAllowed: true,
     notes: "Include target keyword in title and first 100 chars of description",
@@ -105,21 +105,21 @@ const PLATFORM_CONFIG: Record<SupportedPlatform, PlatformSpecificMetadata> = {
   linkedin: {
     format: "professional post or article",
     maxLength: 3000,
-    bestTime: "Tue–Thu 9–11am",
+    bestTime: "Tue-Thu 9-11am",
     linkAllowed: true,
     notes: "Thought leadership, results-driven stories, and carousels perform best",
   },
   pinterest: {
     format: "pin description + board",
     maxLength: 500,
-    bestTime: "Fri–Sun 8–11pm",
+    bestTime: "Fri-Sun 8-11pm",
     aspectRatio: "2:3",
     notes: "Keyword-rich descriptions; link to product/blog page",
   },
   reddit: {
     format: "community post / comment",
     maxLength: 40000,
-    bestTime: "Mon–Fri 9am–12pm",
+    bestTime: "Mon-Fri 9am-12pm",
     linkAllowed: true,
     notes: "Community-appropriate tone; NEVER promotional; human approval REQUIRED",
   },
@@ -207,7 +207,7 @@ function buildFixture(
       platform === "reddit"
         ? ["Reddit requires human approval — never auto-publish"]
         : [],
-    estimatedEngagement: "3–6% engagement rate based on brand benchmark",
+    estimatedEngagement: "3-6% engagement rate based on brand benchmark",
     videoScript,
     locale,
     platform,

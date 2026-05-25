@@ -415,7 +415,7 @@ export function buildReportEmailPayload(
   payload: ReportPayload,
   recipientEmails: string[]
 ): ScheduledReportEmailPayload {
-  const period = `${payload.periodStart} – ${payload.periodEnd}`;
+  const period = `${payload.periodStart} - ${payload.periodEnd}`;
   const subject = `${payload.clientName} Performance Report · ${period}`;
 
   const html = `

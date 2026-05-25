@@ -46,7 +46,7 @@ function withEnv(vars: Record<string, string>, fn: () => void) {
 
 // ─── Registry: default provider = ayrshare ────────────────────────────────────
 
-describe("getConnector – default provider is ayrshare", () => {
+describe("getConnector - default provider is ayrshare", () => {
   beforeEach(() => {
     // Ensure no provider env vars are set
     delete process.env.SOCIAL_PROVIDER_DEFAULT;
@@ -75,7 +75,7 @@ describe("getConnector – default provider is ayrshare", () => {
 
 // ─── Registry: opts.provider = 'direct' override ─────────────────────────────
 
-describe("getConnector – opts.provider = 'direct' override", () => {
+describe("getConnector - opts.provider = 'direct' override", () => {
   it.each([
     ["facebook", FacebookConnector],
     ["instagram", InstagramConnector],
@@ -97,7 +97,7 @@ describe("getConnector – opts.provider = 'direct' override", () => {
 
 // ─── Registry: env-based provider overrides ───────────────────────────────────
 
-describe("getConnector – env-based provider override", () => {
+describe("getConnector - env-based provider override", () => {
   it("SOCIAL_PROVIDER_DEFAULT=direct switches all platforms to direct", () => {
     withEnv({ SOCIAL_PROVIDER_DEFAULT: "direct" }, () => {
       expect(getConnector("facebook")).toBeInstanceOf(FacebookConnector);
@@ -147,7 +147,7 @@ describe("getConnector – env-based provider override", () => {
 
 // ─── Reddit: auto-response HARD BLOCK via direct connector ───────────────────
 
-describe("RedditConnector (direct) – auto-response policy enforcement", () => {
+describe("RedditConnector (direct) - auto-response policy enforcement", () => {
   it("replyToMessage throws RedditAutoResponseBlockedError", async () => {
     const connector = new RedditConnector();
     await expect(
@@ -175,7 +175,7 @@ describe("RedditConnector (direct) – auto-response policy enforcement", () => 
 
 // ─── Reddit: auto-response HARD BLOCK via Ayrshare connector ─────────────────
 
-describe("AyrshareRedditConnector – auto-response policy enforcement", () => {
+describe("AyrshareRedditConnector - auto-response policy enforcement", () => {
   it("replyToMessage throws RedditAutoResponseBlockedError even via Ayrshare path", async () => {
     const connector = new AyrshareRedditConnector();
     await expect(
@@ -202,7 +202,7 @@ describe("AyrshareRedditConnector – auto-response policy enforcement", () => {
 
 // ─── Ayrshare connectors: publishPost calls correct endpoint ─────────────────
 
-describe("Ayrshare connectors – publishPost calls POST /post with correct platform", () => {
+describe("Ayrshare connectors - publishPost calls POST /post with correct platform", () => {
   const FAKE_POST_RESPONSE = {
     id: "ayr-post-123",
     status: "success",
@@ -323,7 +323,7 @@ describe("Ayrshare connectors – publishPost calls POST /post with correct plat
 
 // ─── Ayrshare connectors: schedulePost ───────────────────────────────────────
 
-describe("Ayrshare connectors – schedulePost sends scheduleDate", () => {
+describe("Ayrshare connectors - schedulePost sends scheduleDate", () => {
   let fetchSpy: ReturnType<typeof vi.spyOn>;
   const SCHEDULE_TIME = new Date("2026-06-01T10:00:00Z").getTime();
 
@@ -357,7 +357,7 @@ describe("Ayrshare connectors – schedulePost sends scheduleDate", () => {
 
 // ─── Ayrshare connectors: NotImplemented where expected ──────────────────────
 
-describe("Ayrshare connectors – NotImplementedError on unsupported methods", () => {
+describe("Ayrshare connectors - NotImplementedError on unsupported methods", () => {
   it("Instagram fetchInbox throws NotImplementedError", async () => {
     const c = new AyrshareInstagramConnector();
     await expect(c.fetchInbox("org-1", 0)).rejects.toThrow(NotImplementedError);
@@ -388,7 +388,7 @@ describe("Ayrshare connectors – NotImplementedError on unsupported methods", (
 
 // ─── Ayrshare client: bearer auth header ─────────────────────────────────────
 
-describe("Ayrshare client – bearer auth header", () => {
+describe("Ayrshare client - bearer auth header", () => {
   let fetchSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {

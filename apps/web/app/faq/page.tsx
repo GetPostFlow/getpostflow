@@ -23,7 +23,7 @@ const faqs = [
       },
       {
         q: "How quickly can we get started?",
-        a: "Within 24 hours of signing up, you'll complete a onboarding intake form and have a 30-minute kickoff call with your dedicated strategist. Your first batch of content will be ready for approval within 3–5 business days.",
+        a: "Within 24 hours of signing up, you'll complete a onboarding intake form and have a 30-minute kickoff call with your dedicated strategist. Your first batch of content will be ready for approval within 3-5 business days.",
       },
       {
         q: "Do I need to sign a long-term contract?",
@@ -61,7 +61,7 @@ const faqs = [
       },
       {
         q: "How far ahead is content prepared?",
-        a: "By default, we prepare a full month's content in advance. The first batch is delivered within 3–5 business days of onboarding. After that, you'll receive the next month's batch for review before the current month ends — so there's never a gap.",
+        a: "By default, we prepare a full month's content in advance. The first batch is delivered within 3-5 business days of onboarding. After that, you'll receive the next month's batch for review before the current month ends — so there's never a gap.",
       },
     ],
   },

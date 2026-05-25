@@ -27,7 +27,7 @@ const POSITIVE_KEYWORDS = [
 
 /**
  * Classify sentiment of a message body.
- * Returns a SentimentLabel and a confidence 0–100.
+ * Returns a SentimentLabel and a confidence 0-100.
  */
 export function classifySentiment(text: string): {
   sentiment: SentimentLabel;

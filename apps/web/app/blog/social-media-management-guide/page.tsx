@@ -70,16 +70,16 @@ export default function SocialMediaGuidePost() {
           <h3 style={{ color: "#2F5D62" }}>Instagram</h3>
           <p className="leading-8">
             Instagram rewards consistency and visual quality. Reels are the primary growth lever in
-            2024–2025; carousels drive saves and profile visits; Stories maintain daily connection with
+            2024-2025; carousels drive saves and profile visits; Stories maintain daily connection with
             your existing audience. Don't try to do everything — pick 2 of the 3 and do them well.
-            Posting 4–6x per week is the minimum for meaningful growth.
+            Posting 4-6x per week is the minimum for meaningful growth.
           </p>
 
           <h3 style={{ color: "#2F5D62" }}>TikTok</h3>
           <p className="leading-8">
             TikTok has the highest organic reach of any platform right now. The algorithm is interest-graph
             based, not follower-based, which means new accounts can go viral immediately. Volume matters
-            here — brands that post 1–3x per day see dramatically better results than those that post
+            here — brands that post 1-3x per day see dramatically better results than those that post
             3x per week. Short hooks (first 2 seconds), captions as on-screen text, and trending audio
             are the core mechanics.
           </p>
@@ -89,7 +89,7 @@ export default function SocialMediaGuidePost() {
             LinkedIn is the highest-intent platform for B2B businesses. Text-first posts, personal
             stories with business lessons, and carousel "how-to" posts perform best. Video is
             underutilized here — if you're in B2B and not posting video on LinkedIn, you're missing
-            an opportunity. Post 3–5x per week for consistent reach.
+            an opportunity. Post 3-5x per week for consistent reach.
           </p>
 
           <h3 style={{ color: "#2F5D62" }}>Facebook</h3>

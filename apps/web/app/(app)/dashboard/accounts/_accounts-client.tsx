@@ -6,13 +6,13 @@ import { Badge } from "@getpostflow/ui/badge";
 import { Button } from "@getpostflow/ui/button";
 
 const PLATFORMS = [
-  { id: "linkedin", name: "LinkedIn", icon: "💼", color: "#0A66C2" },
-  { id: "instagram", name: "Instagram", icon: "📸", color: "#E1306C" },
-  { id: "facebook", name: "Facebook", icon: "📘", color: "#1877F2" },
-  { id: "x", name: "X / Twitter", icon: "🐦", color: "#000000" },
-  { id: "tiktok", name: "TikTok", icon: "🎵", color: "#000000" },
-  { id: "youtube", name: "YouTube", icon: "▶️", color: "#FF0000" },
-  { id: "reddit", name: "Reddit", icon: "🤝", color: "#FF4500" },
+  { id: "linkedin", name: "LinkedIn", icon: "LinkedIn Icon", color: "#0A66C2" },
+  { id: "instagram", name: "Instagram", icon: "Instagram Icon", color: "#E1306C" },
+  { id: "facebook", name: "Facebook", icon: "Facebook Icon", color: "#1877F2" },
+  { id: "x", name: "X / Twitter", icon: "X Icon", color: "#000000" },
+  { id: "tiktok", name: "TikTok", icon: "TikTok Icon", color: "#000000" },
+  { id: "youtube", name: "YouTube", icon: "YouTube Icon", color: "#FF0000" },
+  { id: "reddit", name: "Reddit", icon: "Reddit Icon", color: "#FF4500" },
 ] as const;
 
 interface Account {
@@ -92,7 +92,9 @@ export default function AccountsPage() {
             <Card key={p.id}>
               <CardContent className="flex flex-col gap-3 py-4">
                 <div className="flex items-center gap-3">
-                  <span className="text-2xl">{p.icon}</span>
+                  <div className="w-8 h-8 flex items-center justify-center rounded bg-gray-200 text-xs font-semibold" style={{ color: p.color }}>
+                    {p.icon.split(" ")[0]}
+                  </div>
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{p.name}</p>
                     {acc && <p className="text-xs truncate" style={{ color: "var(--text-muted)" }}>{acc.accountName}</p>}
@@ -111,7 +113,7 @@ export default function AccountsPage() {
                   </div>
                 ) : (
                   <Button variant="primary" size="sm" className="text-xs" disabled={connecting === p.id} onClick={() => handleConnect(p.id)}>
-                    {connecting === p.id ? "Connecting…" : "Connect"}
+                    {connecting === p.id ? "Connecting..." : "Connect"}
                   </Button>
                 )}
               </CardContent>

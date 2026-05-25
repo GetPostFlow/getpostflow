@@ -174,7 +174,7 @@ export function generateDemoMetrics(
 
       const impressions = Math.round(base);
       const reach = Math.round(impressions * (0.65 + Math.random() * 0.2));
-      const engagementRate = 0.025 + Math.random() * 0.055; // 2.5–8%
+      const engagementRate = 0.025 + Math.random() * 0.055; // 2.5-8%
       const engagements = Math.round(reach * engagementRate);
       const followerGrowth = Math.round(reach * 0.003 * noise());
       const videoViews = platform === "tiktok" || platform === "instagram"

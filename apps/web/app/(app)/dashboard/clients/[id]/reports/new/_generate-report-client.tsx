@@ -85,7 +85,7 @@ function buildDemoReportPayload(clientId: string, clientName: string, orgName: s
     learningInsights: [
       "Carousel posts outperformed single images by 40% on Instagram.",
       "TikTok hooks under 3s drove 2.3x more video completions.",
-      "Tuesday 9–11am posts average 3.8% higher engagement than other slots.",
+      "Tuesday 9-11am posts average 3.8% higher engagement than other slots.",
     ],
   };
 }

@@ -190,7 +190,7 @@ export default function ReportsListClient({ clientId, clientName }: Props) {
                   </div>
                   <div>
                     <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
-                      {r.type === "monthly" ? "Monthly Report" : "On-Demand Report"} · {r.periodStart} – {r.periodEnd}
+                      {r.type === "monthly" ? "Monthly Report" : "On-Demand Report"} · {r.periodStart} - {r.periodEnd}
                     </p>
                     <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
                       {r.sentAt

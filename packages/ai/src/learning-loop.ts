@@ -16,10 +16,10 @@ export interface ActualMetrics {
   impressions: number;
   reach: number;
   engagements: number;
-  engagementRate: number; // 0–1
+  engagementRate: number; // 0-1
   videoViews?: number;
-  videoCompletionRate?: number; // 0–1
-  clickThroughRate?: number; // 0–1
+  videoCompletionRate?: number; // 0-1
+  clickThroughRate?: number; // 0-1
   followerGrowth?: number;
 }
 
@@ -29,7 +29,7 @@ export interface LearningInput {
   platform: SupportedPlatform;
   contentType: string;
   draft: ContentDraft;
-  predictedScore: number; // 0–1, from scoreContent()
+  predictedScore: number; // 0-1, from scoreContent()
   actual: ActualMetrics;
   publishedAt: Date;
 }
@@ -40,14 +40,14 @@ export interface LearningInsight {
   platform: SupportedPlatform;
   contentType: string;
   prediction: number;
-  actual: number; // normalised 0–1 derived from actualMetrics
+  actual: number; // normalised 0-1 derived from actualMetrics
   delta: number; // actual − prediction
   insightText: string;
   recommendations: string[];
   appliedAt: Date;
 }
 
-// ─── Normalise raw metrics to a 0–1 engagement score ─────────────────────────
+// ─── Normalise raw metrics to a 0-1 engagement score ─────────────────────────
 
 export function normaliseActual(metrics: ActualMetrics): number {
   // Weighted blend of available signals
@@ -55,7 +55,7 @@ export function normaliseActual(metrics: ActualMetrics): number {
   const weights: number[] = [];
 
   if (metrics.engagementRate > 0) {
-    // Typical ER benchmark: 3–6% is good → cap at 10%
+    // Typical ER benchmark: 3-6% is good → cap at 10%
     components.push(Math.min(metrics.engagementRate / 0.1, 1));
     weights.push(0.4);
   }
@@ -66,7 +66,7 @@ export function normaliseActual(metrics: ActualMetrics): number {
   }
 
   if (metrics.clickThroughRate !== undefined) {
-    // CTR benchmark: 1–2% is good → cap at 5%
+    // CTR benchmark: 1-2% is good → cap at 5%
     components.push(Math.min(metrics.clickThroughRate / 0.05, 1));
     weights.push(0.2);
   }
@@ -206,10 +206,10 @@ function buildStubInsight(
       ? `Replicate this ${input.contentType} format on ${input.platform} — it consistently outperforms.`
       : `Revise ${input.contentType} hook for ${input.platform} — engagement rate is below benchmark.`,
     input.actual.videoCompletionRate !== undefined && input.actual.videoCompletionRate < 0.5
-      ? "Shorten video by 20–30% and front-load the hook in the first 3 seconds."
+      ? "Shorten video by 20-30% and front-load the hook in the first 3 seconds."
       : "Maintain current video length — completion rate is within acceptable range.",
     input.draft.hashtags.length < 5
-      ? `Add more targeted hashtags (current: ${input.draft.hashtags.length}) — aim for 8–15 on ${input.platform}.`
+      ? `Add more targeted hashtags (current: ${input.draft.hashtags.length}) — aim for 8-15 on ${input.platform}.`
       : `Hashtag strategy is effective (${input.draft.hashtags.length} tags). Test niche variations to expand reach.`,
   ];
 
@@ -358,7 +358,7 @@ export interface VideoPerformanceData {
   views: number;
   watchTimeSeconds: number;
   durationSeconds: number;
-  completionRate: number; // 0–1
+  completionRate: number; // 0-1
   dropOffPoints: { timestampSeconds: number; retentionRate: number }[];
   abTestVariant?: "A" | "B";
 }
@@ -367,7 +367,7 @@ export interface AbTestResult {
   winner: "A" | "B" | "tie";
   variantAScore: number;
   variantBScore: number;
-  confidence: number; // 0–1
+  confidence: number; // 0-1
   recommendation: string;
 }
 

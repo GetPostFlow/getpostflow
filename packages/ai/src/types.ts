@@ -37,7 +37,7 @@ export type ModerationCategory =
 export interface ModerationResult {
   safe: boolean;
   categories: ModerationCategory[];
-  score: number; // 0–1 risk score
+  score: number; // 0-1 risk score
   raw?: Record<string, unknown>;
 }
 

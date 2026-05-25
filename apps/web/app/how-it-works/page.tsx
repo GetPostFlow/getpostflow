@@ -28,7 +28,7 @@ const steps = [
   },
   {
     number: "02",
-    phase: "Days 2–5",
+    phase: "Days 2-5",
     title: "Strategist builds your plan",
     body: "Your dedicated strategist maps out a full content strategy: which topics, which formats, which platforms, and which posting cadence will move the needle for your specific business.",
     details: [
@@ -40,7 +40,7 @@ const steps = [
   },
   {
     number: "03",
-    phase: "Week 1–2",
+    phase: "Week 1-2",
     title: "Content created & queued",
     body: "Posts, captions, graphics, and short-form videos are produced for every platform. Everything lands in your approval queue — you review, comment, or approve with one click.",
     details: [

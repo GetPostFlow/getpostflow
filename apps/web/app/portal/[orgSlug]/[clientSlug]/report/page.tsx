@@ -274,7 +274,7 @@ export default async function PortalReportPage({ params, searchParams }: Props) 
               {[
                 { emoji: "🚀", text: `${topPlatform ? topPlatform.charAt(0).toUpperCase() + topPlatform.slice(1) : "Instagram"} is your top-performing platform this month. We recommend increasing posting frequency here.` },
                 { emoji: "📈", text: `Engagement rate is tracking above industry average. Carousel posts and Reels are driving the strongest reactions.` },
-                { emoji: "🕐", text: `Peak engagement windows: Tuesday–Thursday 7–9am and 6–8pm. We've adjusted the content calendar to align with these times.` },
+                { emoji: "🕐", text: `Peak engagement windows: Tuesday-Thursday 7-9am and 6-8pm. We've adjusted the content calendar to align with these times.` },
                 { emoji: "💡", text: `Next month we'll A/B test two different caption styles for your top-performing content pillars to further improve reach.` },
               ].map((insight, i) => (
                 <div key={i} style={{ display: "flex", gap: "12px", padding: "12px", background: "#f9fafb", borderRadius: "10px" }}>

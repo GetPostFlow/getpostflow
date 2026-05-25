@@ -114,21 +114,21 @@ export function getBrandStrategyFixture(intake: IntakeData): BrandStrategyDraft 
     audiencePersonas: [
       {
         name: "Ambitious Alex",
-        ageRange: "28–40",
+        ageRange: "28-40",
         description: `A motivated professional in the ${industry} space who values quality and efficiency.`,
         painPoints: ["Limited time", "Information overload", "Unclear ROI"],
         motivations: ["Growth", "Reliability", "Community"],
       },
       {
         name: "Curious Casey",
-        ageRange: "22–34",
+        ageRange: "22-34",
         description: "An early adopter who loves trying new products and sharing discoveries online.",
         painPoints: ["Fear of missing out", "Budget constraints", "Analysis paralysis"],
         motivations: ["Discovery", "Social proof", "Value for money"],
       },
       {
         name: "Loyal Morgan",
-        ageRange: "35–55",
+        ageRange: "35-55",
         description: "A long-term customer who values consistency, quality, and brand reputation.",
         painPoints: ["Inconsistent experiences", "Poor customer service", "Change fatigue"],
         motivations: ["Trust", "Reliability", "Familiarity"],
@@ -260,9 +260,9 @@ export function getBrandStrategyFixture(intake: IntakeData): BrandStrategyDraft 
       tiktok: "4x/week",
     },
     kpiTargets: {
-      followerGrowthRate: "5–10% month-over-month",
-      engagementRate: "3–6% per post",
-      leadConversionRate: "1–3% from social traffic",
+      followerGrowthRate: "5-10% month-over-month",
+      engagementRate: "3-6% per post",
+      leadConversionRate: "1-3% from social traffic",
       awareness: "Reach 10K new unique users per month within 90 days",
     },
     riskFlagsForReview: [
@@ -318,7 +318,7 @@ Return a JSON object with these exact keys:
   "riskFlagsForReview": string[]
 }
 
-Produce 3–5 audiencePersonas, 5–7 contentPillars, and 3 sample posts per platform for: instagram, facebook, linkedin, tiktok.`;
+Produce 3-5 audiencePersonas, 5-7 contentPillars, and 3 sample posts per platform for: instagram, facebook, linkedin, tiktok.`;
 
   try {
     const result = await route({

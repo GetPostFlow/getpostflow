@@ -416,7 +416,7 @@ export default function IntakeFormPage({ clientId, initialData }: { clientId: st
               <TextArea
                 value={form.competitors}
                 onChange={(v) => set("competitors", v)}
-                placeholder="List 3–5 main competitors and what differentiates you from them…"
+                placeholder="List 3-5 main competitors and what differentiates you from them…"
                 rows={2}
               />
             </div>

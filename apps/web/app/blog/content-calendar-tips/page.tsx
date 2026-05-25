@@ -69,8 +69,8 @@ export default function ContentCalendarPost() {
           </p>
           <ol className="leading-8 space-y-2">
             <li><strong>Layer 1 — Monthly themes.</strong> Not post ideas. Themes. "This month we're talking about X." This gives every post a direction without boxing you into specific ideas that may not feel relevant when the time comes.</li>
-            <li><strong>Layer 2 — Weekly content pillars.</strong> Pick 3–5 recurring content types (education, behind-the-scenes, testimonial, promotion, entertainment). Each week, you know roughly what type of content you're making — you just fill in the specific topic.</li>
-            <li><strong>Layer 3 — Batch creation days.</strong> Block 2–3 hours on one day per week (or one day per month if you're planning ahead). Produce everything in one session. Scheduling in advance is the single biggest quality-of-life upgrade for content creators.</li>
+            <li><strong>Layer 2 — Weekly content pillars.</strong> Pick 3-5 recurring content types (education, behind-the-scenes, testimonial, promotion, entertainment). Each week, you know roughly what type of content you're making — you just fill in the specific topic.</li>
+            <li><strong>Layer 3 — Batch creation days.</strong> Block 2-3 hours on one day per week (or one day per month if you're planning ahead). Produce everything in one session. Scheduling in advance is the single biggest quality-of-life upgrade for content creators.</li>
           </ol>
 
           <h2 style={{ color: "#1A1A1A", fontFamily: "var(--font-heading,'Poppins'),sans-serif" }}>
@@ -81,11 +81,11 @@ export default function ContentCalendarPost() {
             posting cadence, and audience expectation:
           </p>
           <ul className="leading-8 space-y-1">
-            <li><strong>Instagram:</strong> 4–7x/week including Reels, carousels, and Stories</li>
-            <li><strong>TikTok:</strong> 1–3x/day if growing; 3–5x/week for maintenance</li>
-            <li><strong>LinkedIn:</strong> 3–5x/week; text-first, professional tone</li>
-            <li><strong>Facebook:</strong> 1–2x/day; links and community posts perform best</li>
-            <li><strong>YouTube Shorts:</strong> 3–7x/week; repurposed TikToks work well</li>
+            <li><strong>Instagram:</strong> 4-7x/week including Reels, carousels, and Stories</li>
+            <li><strong>TikTok:</strong> 1-3x/day if growing; 3-5x/week for maintenance</li>
+            <li><strong>LinkedIn:</strong> 3-5x/week; text-first, professional tone</li>
+            <li><strong>Facebook:</strong> 1-2x/day; links and community posts perform best</li>
+            <li><strong>YouTube Shorts:</strong> 3-7x/week; repurposed TikToks work well</li>
           </ul>
 
           <h2 style={{ color: "#1A1A1A", fontFamily: "var(--font-heading,'Poppins'),sans-serif" }}>

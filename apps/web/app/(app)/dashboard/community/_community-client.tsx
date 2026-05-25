@@ -79,7 +79,7 @@ const DEMO_TEMPLATES = [
   {
     id: "tmpl-1",
     title: "Business hours",
-    content: "Hi! Our hours are Monday–Saturday 7am–7pm and Sunday 8am–5pm. You can find us at 123 Baker St. DM us if you have any other questions!",
+    content: "Hi! Our hours are Monday-Saturday 7am-7pm and Sunday 8am-5pm. You can find us at 123 Baker St. DM us if you have any other questions!",
     useCount: 24,
     tags: ["hours", "location"],
   },
