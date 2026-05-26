@@ -12,28 +12,74 @@ interface Asset {
 }
 
 export default function ContentLibraryPage() {
-  const [assets, setAssets] = useState<Asset[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [assets, setAssets] = useState<Asset[]>([
+    {
+      id: 'asset-1',
+      clientId: 'client-1',
+      filename: 'summer-sale-banner.png',
+      type: 'image',
+      publicUrl: 'https://via.placeholder.com/1200x628?text=Summer+Sale+Banner',
+      uploadedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'asset-2',
+      clientId: 'client-1',
+      filename: 'acme-bakery-logo.svg',
+      type: 'image',
+      publicUrl: 'https://via.placeholder.com/200x200?text=Acme+Logo',
+      uploadedAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'asset-3',
+      clientId: 'client-2',
+      filename: 'sunrise-cafe-menu.pdf',
+      type: 'document',
+      publicUrl: 'https://via.placeholder.com/400x300?text=Menu+PDF',
+      uploadedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'asset-4',
+      clientId: 'client-2',
+      filename: 'coffee-product-video.mp4',
+      type: 'video',
+      publicUrl: 'https://via.placeholder.com/400x300?text=Product+Video',
+      uploadedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'asset-5',
+      clientId: 'client-3',
+      filename: 'studio-portfolio.pdf',
+      type: 'document',
+      publicUrl: 'https://via.placeholder.com/400x300?text=Portfolio',
+      uploadedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'asset-6',
+      clientId: 'client-1',
+      filename: 'instagram-template-1.png',
+      type: 'image',
+      publicUrl: 'https://via.placeholder.com/1080x1080?text=Instagram+Template',
+      uploadedAt: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'asset-7',
+      clientId: 'client-2',
+      filename: 'tiktok-trend-audio.mp3',
+      type: 'video',
+      publicUrl: 'https://via.placeholder.com/400x300?text=Audio+Clip',
+      uploadedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 'asset-8',
+      clientId: 'client-3',
+      filename: 'brand-guidelines.pdf',
+      type: 'document',
+      publicUrl: 'https://via.placeholder.com/400x300?text=Brand+Guide',
+      uploadedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+  ]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState<'all' | 'image' | 'video' | 'document'>('all');
-
-  useEffect(() => {
-    async function fetchAssets() {
-      try {
-        const response = await fetch('/api/demo-assets');
-        if (response.ok) {
-          const data = await response.json();
-          setAssets(data.assets || []);
-        }
-      } catch (error) {
-        console.error('Failed to fetch assets:', error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchAssets();
-  }, []);
 
   const filtered = assets.filter(asset => {
     const matchesSearch = asset.filename.toLowerCase().includes(searchTerm.toLowerCase());
@@ -41,13 +87,13 @@ export default function ContentLibraryPage() {
     return matchesSearch && matchesType;
   });
 
-  const typeIcons = {
+  const typeIcons: Record<string, string> = {
     image: '🖼',
     video: '🎬',
     document: '📄',
   };
 
-  const typeColors = {
+  const typeColors: Record<string, string> = {
     image: '#3B82F6',
     video: '#8B5CF6',
     document: '#F59E0B',
@@ -65,16 +111,13 @@ export default function ContentLibraryPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Content Library</h1>
-          <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Organize and manage all your content assets</p>
+          <h1 className="text-2xl font-semibold" style={{ color: 'var(--text-primary)' }}>Content Library</h1>
+          <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>Organize and manage all your content assets</p>
         </div>
         <button
           className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white transition hover:opacity-90"
           style={{ background: 'var(--brand-primary)' }}
         >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-            <path d="M8 2a1 1 0 011 1v4h4a1 1 0 110 2h-4v4a1 1 0 11-2 0v-4H3a1 1 0 110-2h4V3a1 1 0 011-1z" />
-          </svg>
           Upload
         </button>
       </div>
@@ -86,10 +129,10 @@ export default function ContentLibraryPage() {
           placeholder="Search assets..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-4 py-2 rounded-lg border text-sm"
+          className="w-full px-4 py-2 rounded-lg border text-sm outline-none"
           style={{
-            borderColor: 'var(--border)',
-            background: 'var(--background)',
+            borderColor: 'var(--border-soft)',
+            background: 'var(--bg-subtle)',
             color: 'var(--text-primary)',
           }}
         />
@@ -102,7 +145,7 @@ export default function ContentLibraryPage() {
               onClick={() => setSelectedType(type)}
               className="px-3 py-1 rounded-full text-xs font-medium transition"
               style={{
-                background: selectedType === type ? 'var(--brand-primary)' : 'var(--subtle)',
+                background: selectedType === type ? 'var(--brand-primary)' : 'var(--bg-subtle)',
                 color: selectedType === type ? 'white' : 'var(--text-secondary)',
               }}
             >
@@ -114,13 +157,9 @@ export default function ContentLibraryPage() {
 
       {/* Assets Grid */}
       <div className="flex flex-col gap-4">
-        {loading ? (
-          <div className="p-6 rounded-lg border text-center" style={{ borderColor: 'var(--border)', background: 'var(--background)' }}>
-            <p style={{ color: 'var(--text-secondary)' }}>Loading assets...</p>
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="p-6 rounded-lg border text-center" style={{ borderColor: 'var(--border)', background: 'var(--background)' }}>
-            <p style={{ color: 'var(--text-secondary)' }}>
+        {filtered.length === 0 ? (
+          <div className="p-6 rounded-lg border text-center" style={{ borderColor: 'var(--border-soft)', background: 'var(--bg-subtle)' }}>
+            <p style={{ color: 'var(--text-muted)' }}>
               {assets.length === 0 ? 'No assets yet. Upload your first asset to get started.' : 'No assets match your filters.'}
             </p>
           </div>
@@ -130,19 +169,15 @@ export default function ContentLibraryPage() {
               <div
                 key={asset.id}
                 className="rounded-lg border overflow-hidden transition hover:shadow-md"
-                style={{ borderColor: 'var(--border)', background: 'var(--background)' }}
+                style={{ borderColor: 'var(--border-soft)', background: 'var(--bg-subtle)' }}
               >
                 {/* Asset Preview */}
                 <div
                   className="w-full h-40 flex items-center justify-center text-3xl"
                   style={{ background: `${typeColors[asset.type]}20` }}
                 >
-                  {asset.publicUrl ? (
-                    asset.type === 'image' ? (
-                      <img src={asset.publicUrl} alt={asset.filename} className="w-full h-full object-cover" />
-                    ) : (
-                      typeIcons[asset.type]
-                    )
+                  {asset.publicUrl && asset.type === 'image' ? (
+                    <img src={asset.publicUrl} alt={asset.filename} className="w-full h-full object-cover" />
                   ) : (
                     typeIcons[asset.type]
                   )}
@@ -153,7 +188,7 @@ export default function ContentLibraryPage() {
                   <h3 className="font-semibold text-sm truncate" style={{ color: 'var(--text-primary)' }}>
                     {asset.filename}
                   </h3>
-                  <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
+                  <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
                     {new Date(asset.uploadedAt).toLocaleDateString()}
                   </p>
                   <div className="flex gap-2 mt-3">
@@ -169,7 +204,7 @@ export default function ContentLibraryPage() {
                     <button
                       className="flex-1 px-2 py-1 rounded text-xs font-medium transition"
                       style={{
-                        background: 'var(--subtle)',
+                        background: 'var(--bg-subtle)',
                         color: 'var(--text-secondary)',
                       }}
                     >
