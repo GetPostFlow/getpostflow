@@ -194,6 +194,7 @@ async function main() {
   if (!existingSunriseStrategy) {
     const draft = getBrandStrategyFixture(SUNRISE_INTAKE);
     await db.insert(clientBrandStrategies).values({
+      orgId: org.id,
       clientId: sunrise.id,
       versionInt: 1,
       status: "client_pending",
@@ -251,6 +252,7 @@ async function main() {
   if (!existingAcmeStrategy) {
     const draft = getBrandStrategyFixture(ACME_INTAKE);
     await db.insert(clientBrandStrategies).values({
+      orgId: org.id,
       clientId: acme.id,
       versionInt: 1,
       status: "client_approved",
@@ -350,6 +352,7 @@ async function main() {
   if (!existingMetroStrategy) {
     const draft = getBrandStrategyFixture(METRO_INTAKE);
     await db.insert(clientBrandStrategies).values({
+      orgId: org.id,
       clientId: metro.id,
       versionInt: 1,
       status: "active",
